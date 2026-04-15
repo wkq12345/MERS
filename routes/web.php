@@ -96,10 +96,13 @@ Route::get('/recommendations/criteria', [RecommendationController::class, 'direc
 Route::get('/recommendations/hundred-dollar', [RecommendationController::class, 'hundredDollarMethod'])->name('recommendations.hdm');
 Route::get('/recommendations/kano', [RecommendationController::class, 'kanoMethod'])->name('recommendations.kano');
 Route::post('/recommendations/calculate', [RecommendationController::class, 'calculateRecommendations'])->name('recommendations.calculate');
+Route::get('/recommendations/results', [RecommendationController::class, 'showResults'])->name('recommendations.results');
+Route::get('/recommendations/previous', [RecommendationController::class, 'showPreviousResult'])->name('recommendations.showPrevious');
 Route::get('/sus', [RecommendationController::class, 'susPage'])->name('recommendations.sus.index');
 Route::post('/recommendations/sus', [RecommendationController::class, 'submitSystemUsabilityScale'])->name('recommendations.sus.submit');
 Route::get('/recommendations/compare', [RecommendationController::class, 'compareRecommendations'])->name('recommendations.compare');
 Route::post('/recommendations/clear-method', [RecommendationController::class, 'clearMethodResult'])->name('recommendations.clear_method');
+Route::post('/recommendations/favorite', [RecommendationController::class, 'saveFavorite'])->name('recommendations.save_favorite');
 Route::post('/recommendations/send-to-admin', [RecommendationController::class, 'sendResultsToAdmin'])->name('recommendations.send_admin');
 
 // Profile Routes

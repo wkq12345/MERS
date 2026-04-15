@@ -9,7 +9,6 @@ use App\Models\TouristSpotCriteriaRating;
 use App\Models\CriteriaType;
 use App\Models\WeightingMethod;
 use App\Models\RecommendationRun;
-use App\Models\SusSubmission;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
@@ -54,16 +53,40 @@ class RecommendationController extends Controller
         $userId = $actor['user_id'];
         $guestKey = $actor['guest_key'];
 
-        $susQuery = SusSubmission::with('user');
-        if ($userId) {
-            $susQuery->where('user_id', $userId);
-        } else {
-            $susQuery->whereNull('user_id')->where('guest_key', $guestKey);
+        $methods = WeightingMethod::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $methodCode = (string) $request->query('method_code', '');
+
+        if ($methodCode === '') {
+            $latestRunQuery = RecommendationRun::with('weightingMethod')->latest();
+            $this->applyActorScope($latestRunQuery, $userId, $guestKey);
+            $latestRun = $latestRunQuery->first();
+            $methodCode = (string) optional(optional($latestRun)->weightingMethod)->code;
         }
-        $submission = $susQuery->latest('submitted_at')->first();
+
+        $selectedMethod = $methods->firstWhere('code', $methodCode);
+
+        if (!$selectedMethod && $request->filled('method_code')) {
+            return redirect()
+                ->route('recommendations.compare')
+                ->with('error', 'Selected method is invalid for SUS survey.');
+        }
+
+        $submission = null;
+        if ($selectedMethod) {
+            $runQuery = RecommendationRun::query()
+                ->where('weighting_method_id', $selectedMethod->id)
+                ->latest();
+            $this->applyActorScope($runQuery, $userId, $guestKey);
+            $submission = $runQuery->first();
+        }
 
         return view('User.sus', [
             'submission' => $submission,
+            'selectedMethod' => $selectedMethod,
+            'methods' => $methods,
         ]);
     }
 
@@ -351,6 +374,7 @@ class RecommendationController extends Controller
                 'submitted_to_admin' => true,
                 'submitted_at' => now(),
                 'submitter_name' => $submitterName,
+                'ip_address' => $request->ip(),
                 'started_at' => $startedAt,
                 'completed_at' => $completedAt,
                 'time_taken_seconds' => $timeTakenSeconds,
@@ -361,7 +385,7 @@ class RecommendationController extends Controller
 
         $methodStatuses = $this->buildMethodStatuses($userId, $guestKey);
 
-        return view('recommendations.results', [
+        return redirect()->route('recommendations.results')->with('resultData', [
             'results' => $results,
             'touristSpots' => $touristSpots,
             'separations' => $separations,
@@ -385,9 +409,111 @@ class RecommendationController extends Controller
         ]);
     }
 
+    public function showResults(Request $request)
+    {
+        if (!$request->session()->has('resultData')) {
+            return redirect()->route('recommendations.drm')
+                ->with('error', 'No recent calculation found. Please run the process again.');
+        }
+
+        $request->session()->keep(['resultData']);
+        $data = $request->session()->get('resultData');
+
+        $methodCode = $data['currentMethodCode'] ?? null;
+        $selectedFavorite = null;
+        if ($methodCode) {
+            $actor = $this->resolveActorContext($request);
+            $weightingMethod = WeightingMethod::where('code', $methodCode)->first();
+            if ($weightingMethod) {
+                $runQuery = \App\Models\RecommendationRun::query()
+                    ->where('weighting_method_id', $weightingMethod->id)
+                    ->latest();
+                $this->applyActorScope($runQuery, $actor['user_id'], $actor['guest_key']);
+                $run = $runQuery->first();
+                if ($run) {
+                    $selectedFavorite = $run->favorite_tourist_spot_id;
+                }
+            }
+        }
+        $data['selectedFavorite'] = $selectedFavorite;
+
+        return view('recommendations.results', $data);
+    }
+
+    public function showPreviousResult(Request $request)
+    {
+        $methodCode = $request->query('method_code');
+
+        if (!$methodCode) {
+            return redirect()->route('recommendations.compare')
+                ->with('error', 'Method code is required.');
+        }
+
+        $actor = $this->resolveActorContext($request);
+        $userId = $actor['user_id'];
+        $guestKey = $actor['guest_key'];
+
+        $weightingMethod = WeightingMethod::where('code', $methodCode)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$weightingMethod) {
+            return redirect()->route('recommendations.compare')
+                ->with('error', 'Weighting method not found.');
+        }
+
+        $runQuery = \App\Models\RecommendationRun::query()
+            ->where('weighting_method_id', $weightingMethod->id)
+            ->latest();
+
+        $this->applyActorScope($runQuery, $userId, $guestKey);
+        $run = $runQuery->first();
+
+        if (!$run) {
+            return redirect()->route('recommendations.compare')
+                ->with('error', 'No previous result found for this method.');
+        }
+
+        $touristSpots = TouristSpot::with(['location', 'ratings'])
+            ->where('status', true)
+            ->get();
+
+        $selectedCriteria = Criteria::whereIn('id', collect($run->criteria_id)->toArray())
+            ->get()
+            ->map(function ($criterion) {
+                return [
+                    'id' => $criterion->id,
+                    'name' => $criterion->name,
+                ];
+            })
+            ->values();
+
+        $methodStatuses = $this->buildMethodStatuses($userId, $guestKey);
+
+        return view('recommendations.results', [
+            'results' => $run->ranked_results ?? [],
+            'touristSpots' => $touristSpots,
+            'selectedCriteria' => $selectedCriteria,
+            'normalizedWeights' => $run->criteria_weight ?? [],
+            'criteriaSignature' => $run->criteria_signature,
+            'currentMethodCode' => $weightingMethod->code,
+            'methodStatuses' => $methodStatuses,
+            'separations' => [],
+            'debug' => [],
+            'selectedFavorite' => $run->favorite_tourist_spot_id,
+        ]);
+    }
+
     public function submitSystemUsabilityScale(Request $request)
     {
         $validated = $request->validate([
+            'method_code' => [
+                'required',
+                'string',
+                Rule::exists('weighting_methods', 'code')->where(function ($query) {
+                    $query->where('is_active', true);
+                }),
+            ],
             'sus_q1' => ['required', 'integer', 'between:1,5'],
             'sus_q2' => ['required', 'integer', 'between:1,5'],
             'sus_q3' => ['required', 'integer', 'between:1,5'],
@@ -404,17 +530,32 @@ class RecommendationController extends Controller
         $userId = $actor['user_id'];
         $guestKey = $actor['guest_key'];
 
-        $existingSubmissionQuery = SusSubmission::query();
-        if ($userId) {
-            $existingSubmissionQuery->where('user_id', $userId);
-        } else {
-            $existingSubmissionQuery->whereNull('user_id')->where('guest_key', $guestKey);
+        $weightingMethod = WeightingMethod::where('code', $validated['method_code'])
+            ->where('is_active', true)
+            ->first();
+
+        if (!$weightingMethod) {
+            return redirect()
+                ->route('recommendations.compare')
+                ->with('error', 'Weighting method not found for SUS submission.');
         }
 
-        if ($existingSubmissionQuery->exists()) {
+        $runQuery = RecommendationRun::query()
+            ->where('weighting_method_id', $weightingMethod->id)
+            ->latest();
+        $this->applyActorScope($runQuery, $userId, $guestKey);
+        $run = $runQuery->first();
+
+        if (!$run) {
             return redirect()
-                ->route('recommendations.sus.index')
-                ->with('info', 'You have already submitted SUS feedback. It only needs to be answered once.');
+                ->route('recommendations.compare')
+                ->with('error', 'Please complete the selected method before submitting SUS feedback.');
+        }
+
+        if (!is_null($run->sus_submitted_at)) {
+            return redirect()
+                ->route('recommendations.sus.index', ['method_code' => $weightingMethod->code])
+                ->with('info', 'You have already submitted SUS feedback for this method.');
         }
 
         $responses = [];
@@ -432,17 +573,16 @@ class RecommendationController extends Controller
 
         $susScore = round($susSum * 2.5, 2);
 
-        SusSubmission::create([
-            'user_id' => $userId,
-            'guest_key' => $guestKey,
+        $run->update([
             'sus_responses' => $responses,
             'sus_score' => $susScore,
-            'submitted_at' => now(),
+            'sus_submitted_at' => now(),
+            'ip_address' => $request->ip(),
         ]);
 
         return redirect()
-            ->route('recommendations.sus.index')
-            ->with('success', 'SUS feedback submitted successfully. Score: ' . number_format($susScore, 2) . '/100.');
+            ->route('recommendations.sus.index', ['method_code' => $weightingMethod->code])
+            ->with('success', 'SUS feedback for ' . $weightingMethod->name . ' submitted successfully. Score: ' . number_format($susScore, 2) . '/100.');
     }
 
     public function compareRecommendations(Request $request)
@@ -604,6 +744,8 @@ class RecommendationController extends Controller
             'submitted_to_admin' => true,
             'submitted_at' => now(),
             'submitter_name' => $senderName,
+            'ip_address' => $request->ip(),
+
         ]);
 
         return redirect()->route('recommendations.compare')
@@ -674,6 +816,40 @@ class RecommendationController extends Controller
         }
 
         return $statuses;
+    }
+
+    public function saveFavorite(Request $request)
+    {
+        $request->validate([
+            'tourist_spot_id' => 'required|exists:tourist_spots,id',
+            'method_code' => 'required|string',
+        ]);
+
+        if ($request->session()->has('resultData')) {
+            $request->session()->keep(['resultData']);
+        }
+
+        $actor = $this->resolveActorContext($request);
+        $userId = $actor['user_id'];
+        $guestKey = $actor['guest_key'];
+
+        $method = WeightingMethod::where('code', $request->input('method_code'))->first();
+
+        if (!$method) {
+            return response()->json(['success' => false, 'message' => 'Method not found.'], 404);
+        }
+
+        $query = RecommendationRun::where('weighting_method_id', $method->id);
+        $this->applyActorScope($query, $userId, $guestKey);
+
+        $run = $query->latest()->first();
+
+        if ($run) {
+            $run->update(['favorite_tourist_spot_id' => $request->input('tourist_spot_id')]);
+            return response()->json(['success' => true, 'message' => 'Favorite spot saved.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Run not found.'], 404);
     }
 
     private function resolveActorContext(Request $request): array

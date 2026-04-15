@@ -12,6 +12,7 @@ class CriteriaType extends Model
     protected $table = 'criteria_type';
 
     protected $fillable = [
+        'id',
         'name',
         'description',
         'ideal_preference',

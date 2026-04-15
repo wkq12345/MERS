@@ -294,10 +294,6 @@
   }
 
   function closeCriteriaModal() {
-      if(activeCriteria.size < 4) {
-          alert("Please select exactly 4 criteria before exiting.");
-          return;
-      }
       document.getElementById('criteriaModal').classList.add('hidden');
   }
 

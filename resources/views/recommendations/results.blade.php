@@ -70,7 +70,7 @@
                     continue;
                 }
 
-                $criterionName = (string) ($criterionMeta['name'] ?? ('Criterion ' . $criterionId));
+                $criterionName = (string) ($criterionMeta['name'] ?? 'Criterion ' . $criterionId);
                 $criterionNameLower = strtolower($criterionName);
                 $rawValue = $ratingsById[$criterionId]->raw_value ?? null;
 
@@ -91,9 +91,7 @@
             }
 
             if ($reviewScore === null) {
-                $reviewScore = collect($criteriaValues)
-                    ->pluck('value')
-                    ->first(fn($v) => $v !== null && $v !== '');
+                $reviewScore = collect($criteriaValues)->pluck('value')->first(fn($v) => $v !== null && $v !== '');
                 $reviewScore = $reviewScore ? (float) $reviewScore : null;
             }
 
@@ -104,11 +102,17 @@
                     if (!empty($cleanUrl)) {
                         $host = parse_url($cleanUrl, PHP_URL_HOST) ?? '';
                         $siteName = 'View Details';
-                        if (stripos($host, 'tripadvisor') !== false) $siteName = 'TripAdvisor';
-                        elseif (stripos($host, 'klook') !== false) $siteName = 'Klook';
-                        elseif (stripos($host, 'trip.com') !== false) $siteName = 'Trip.com';
-                        elseif (stripos($host, 'agoda') !== false) $siteName = 'Agoda';
-                        elseif (stripos($host, 'traveloka') !== false) $siteName = 'Traveloka';
+                        if (stripos($host, 'tripadvisor') !== false) {
+                            $siteName = 'TripAdvisor';
+                        } elseif (stripos($host, 'klook') !== false) {
+                            $siteName = 'Klook';
+                        } elseif (stripos($host, 'trip.com') !== false) {
+                            $siteName = 'Trip.com';
+                        } elseif (stripos($host, 'agoda') !== false) {
+                            $siteName = 'Agoda';
+                        } elseif (stripos($host, 'traveloka') !== false) {
+                            $siteName = 'Traveloka';
+                        }
                         $parsedLinks[] = ['url' => $cleanUrl, 'name' => $siteName];
                     }
                 }
@@ -139,11 +143,23 @@
                 <p class="text-gray-600">Based on your preferences, here are the top recommended ecotourism destinations</p>
             </div>
 
+            <!-- Notification Banner -->
+            <div x-show="selectedFavorite === null" x-transition.duration.500ms
+                class="mb-6 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4 shadow-sm flex items-start gap-3">
+                <i class="bi bi-info-circle-fill text-blue-500 text-xl mt-0.5"></i>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-blue-900">Don't forget to pick a favorite!</h3>
+                    <p class="text-sm text-blue-700 mt-1">Review the results below and click <b>"Mark as Favorite"</b> on
+                        the spot you'd most like to visit. Your choice will be saved with this recommendation result.</p>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <div class="lg:col-span-1">
                     <div class="sticky top-6 space-y-6">
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <button type="button" class="w-full flex items-center justify-between text-left border-none outline-none p-0 focus:outline-none"
+                            <button type="button"
+                                class="w-full flex items-center justify-between text-left border-none outline-none p-0 focus:outline-none"
                                 @click="showFilters = !showFilters">
                                 <div class="flex items-center gap-2">
                                     <i class="bi bi-funnel text-blue-600"></i>
@@ -173,13 +189,16 @@
                             </div>
 
                             <div class="space-y-2 mb-4">
-                                @foreach (($methodStatuses ?? []) as $code => $status)
+                                @foreach ($methodStatuses ?? [] as $code => $status)
                                     <div class="flex items-center justify-between text-sm">
                                         <span class="text-gray-700">{{ $status['name'] }}</span>
                                         @if ($status['has_run'])
-                                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Ready</span>
+                                            <span
+                                                class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Ready</span>
                                         @else
-                                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Not Run</span>
+                                            <span
+                                                class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Not
+                                                Run</span>
                                         @endif
                                     </div>
                                 @endforeach
@@ -193,7 +212,8 @@
 
                         <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-1 shadow-lg">
                             <div class="bg-white rounded-lg p-5">
-                                <button type="button" class="w-full flex items-center justify-between text-left border-none outline-none p-0 focus:outline-none"
+                                <button type="button"
+                                    class="w-full flex items-center justify-between text-left border-none outline-none p-0 focus:outline-none"
                                     @click="showMethods = !showMethods">
                                     <div class="flex items-center gap-2">
                                         <i class="bi bi-arrow-repeat text-indigo-600"></i>
@@ -203,7 +223,7 @@
                                 </button>
 
                                 <div class="mt-3 space-y-2" x-show="showMethods" x-transition>
-                                    @foreach (($methodStatuses ?? []) as $methodCode => $status)
+                                    @foreach ($methodStatuses ?? [] as $methodCode => $status)
                                         @php
                                             $isCompleted = (bool) ($status['has_run'] ?? false);
                                             $isCurrentMethod = ($currentMethodCode ?? '') === $methodCode;
@@ -215,17 +235,19 @@
                                                 {{ $status['name'] }}
                                             </a>
                                         @else
-                                            <div class="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-between">
+                                            <div
+                                                class="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-between">
                                                 <span>{{ $status['name'] }}</span>
                                                 <span class="text-xs font-semibold">Completed</span>
                                             </div>
 
-                                            <form id="clear-form-{{ $methodCode }}" method="POST" action="{{ route('recommendations.clear_method') }}">
+                                            <form id="clear-form-{{ $methodCode }}" method="POST"
+                                                action="{{ route('recommendations.clear_method') }}">
                                                 @csrf
                                                 <input type="hidden" name="method_code" value="{{ $methodCode }}">
-                                                <input type="hidden" name="criteria_signature" value="{{ $criteriaSignature ?? '' }}">
-                                                <button type="button"
-                                                    data-clear-form="clear-form-{{ $methodCode }}"
+                                                <input type="hidden" name="criteria_signature"
+                                                    value="{{ $criteriaSignature ?? '' }}">
+                                                <button type="button" data-clear-form="clear-form-{{ $methodCode }}"
                                                     data-method-name="{{ $status['name'] }}"
                                                     class="clear-method-btn w-full px-4 py-2 bg-white border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-colors">
                                                     {{ $isCurrentMethod ? 'Clear and Redo This Method' : 'Clear and Enable This Method' }}
@@ -304,10 +326,13 @@
 
                                         <p class="text-sm text-gray-600 mb-4" x-text="spot.description"></p>
 
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
+                                        <div
+                                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-sm">
                                             <template x-for="criterion in spot.criteriaValues" :key="criterion.id">
-                                                <div class="px-3 py-2 rounded border-l-2" :class="[criterion.theme.bg, criterion.theme.border]">
-                                                    <p class="text-xs" :class="criterion.theme.text" x-text="criterion.name"></p>
+                                                <div class="px-3 py-2 rounded border-l-2"
+                                                    :class="[criterion.theme.bg, criterion.theme.border]">
+                                                    <p class="text-xs" :class="criterion.theme.text"
+                                                        x-text="criterion.name"></p>
                                                     <p class="text-gray-900 font-semibold"
                                                         x-text="formatValue(criterion.value, criterion.suffix)"></p>
                                                 </div>
@@ -316,10 +341,14 @@
 
                                         <template x-if="spot.review_links && spot.review_links.length > 0">
                                             <div class="mt-4 pt-4 border-t border-gray-100">
-                                                <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">Read Reviews &amp; Book</p>
+                                                <p
+                                                    class="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">
+                                                    Read Reviews &amp; Book</p>
                                                 <div class="flex flex-wrap gap-2">
-                                                    <template x-for="(link, index) in spot.review_links" :key="index">
-                                                        <a :href="link.url" target="_blank" rel="noopener noreferrer"
+                                                    <template x-for="(link, index) in spot.review_links"
+                                                        :key="index">
+                                                        <a :href="link.url" target="_blank"
+                                                            rel="noopener noreferrer"
                                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full hover:bg-indigo-100 transition-colors no-underline hover:no-underline">
                                                             <i class="bi bi-box-arrow-up-right"></i>
                                                             <span x-text="link.name"></span>
@@ -328,6 +357,28 @@
                                                 </div>
                                             </div>
                                         </template>
+
+                                        <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                                            <button type="button" @click="saveFavorite(spot.id)" :disabled="isSaving"
+                                                :class="selectedFavorite === spot.id ?
+                                                    'bg-green-600 text-white border-green-600 hover:bg-green-700' :
+                                                    'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500'"
+                                                class="inline-flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors font-medium text-sm disabled:opacity-50">
+
+                                                <template x-if="isSaving && selectedFavorite !== spot.id">
+                                                    <i class="bi bi-hourglass-split"></i>
+                                                </template>
+
+                                                <template x-if="!isSaving || selectedFavorite === spot.id">
+                                                    <i class="bi"
+                                                        :class="selectedFavorite === spot.id ? 'bi-check-circle-fill' :
+                                                            'bi-heart'"></i>
+                                                </template>
+
+                                                <span
+                                                    x-text="selectedFavorite === spot.id ? 'Selected as Favorite' : 'Mark as Favorite'"></span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -373,13 +424,15 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h4 class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
+                            <h4
+                                class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
                                 Step 5a: Positive Ideal Solution (A*)
                             </h4>
                             <pre class="bg-black p-3 rounded border border-gray-800 overflow-x-auto">{{ json_encode($debug['idealBest'] ?? [], JSON_PRETTY_PRINT) }}</pre>
                         </div>
                         <div>
-                            <h4 class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
+                            <h4
+                                class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
                                 Step 5b: Negative Ideal Solution (A-)
                             </h4>
                             <pre class="bg-black p-3 rounded border border-gray-800 overflow-x-auto">{{ json_encode($debug['idealWorst'] ?? [], JSON_PRETTY_PRINT) }}</pre>
@@ -395,13 +448,15 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <h4 class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
+                            <h4
+                                class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
                                 Step 7: Relative Closeness to Ideal Solution
                             </h4>
                             <pre class="bg-black p-3 rounded border border-gray-800 overflow-x-auto">{{ json_encode($debug['relativeCloseness'] ?? [], JSON_PRETTY_PRINT) }}</pre>
                         </div>
                         <div>
-                            <h4 class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
+                            <h4
+                                class="text-white mb-2 font-bold uppercase tracking-wider text-[11px] bg-gray-800 p-2 rounded">
                                 Step 8: Final Ranked Results
                             </h4>
                             <pre class="bg-black p-3 rounded border border-gray-800 max-h-[400px] overflow-y-auto">{{ json_encode($results ?? [], JSON_PRETTY_PRINT) }}</pre>
@@ -444,10 +499,44 @@
                     selectedLocation: 'All Locations',
                     showFilters: true,
                     showMethods: true,
+                    selectedFavorite: {{ $selectedFavorite ?? 'null' }},
+                    isSaving: false,
+                    currentMethod: '{{ $currentMethodCode ?? '' }}',
 
                     init() {
                         if (!this.locations.includes(this.selectedLocation)) {
                             this.selectedLocation = this.locations[0] || 'All Locations';
+                        }
+                    },
+
+                    async saveFavorite(spotId) {
+                        if (this.isSaving) return;
+
+                        this.isSaving = true;
+
+                        try {
+                            const response = await fetch('{{ route('recommendations.save_favorite') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({
+                                    tourist_spot_id: spotId,
+                                    method_code: this.currentMethod
+                                })
+                            });
+
+                            if (response.ok) {
+                                this.selectedFavorite = spotId;
+                            } else {
+                                console.error('Failed to save selection.');
+                            }
+                        } catch (error) {
+                            console.error('Error saving favorite:', error);
+                        } finally {
+                            this.isSaving = false;
                         }
                     },
 
@@ -485,7 +574,7 @@
                 };
             }
 
-            document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('DOMContentLoaded', function() {
                 const modal = document.getElementById('clear-method-modal');
                 const messageEl = document.getElementById('clear-method-modal-message');
                 const cancelBtn = document.getElementById('clear-method-cancel');
@@ -494,7 +583,8 @@
 
                 function openModal(methodName, formId) {
                     pendingFormId = formId;
-                    messageEl.textContent = 'This will clear the saved result for ' + methodName + ' and allow you to redo it.';
+                    messageEl.textContent = 'This will clear the saved result for ' + methodName +
+                        ' and allow you to redo it.';
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
                 }
@@ -505,8 +595,8 @@
                     modal.classList.remove('flex');
                 }
 
-                document.querySelectorAll('.clear-method-btn').forEach(function (btn) {
-                    btn.addEventListener('click', function () {
+                document.querySelectorAll('.clear-method-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
                         const formId = btn.getAttribute('data-clear-form');
                         const methodName = btn.getAttribute('data-method-name') || 'this method';
                         openModal(methodName, formId);
@@ -515,13 +605,13 @@
 
                 cancelBtn.addEventListener('click', closeModal);
 
-                modal.addEventListener('click', function (event) {
+                modal.addEventListener('click', function(event) {
                     if (event.target === modal) {
                         closeModal();
                     }
                 });
 
-                confirmBtn.addEventListener('click', function () {
+                confirmBtn.addEventListener('click', function() {
                     if (!pendingFormId) {
                         return;
                     }

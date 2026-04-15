@@ -61,7 +61,9 @@
                                 <th class="py-3">Time Taken</th>
                                 <th class="py-3">Submitted At</th>
                                 <th class="py-3">Top 3 Spots</th>
+                                <th class="py-3">Favorite Spot</th>
                                 <th class="py-3">Criteria Used</th>
+                                <th class="py-3">IP Address</th>
                                 <th class="py-3 text-end pe-4">Actions</th>
                             </tr>
                         </thead>
@@ -76,6 +78,7 @@
                                     $submitterDisplay = $run->submitter_name ?? ($run->user?->name ?? 'Guest');
                                     $timeTakenSeconds = $run->time_taken_seconds;
                                     $timeTakenLabel = '—';
+                                    $ipAddress = $run->ip_address ?? '—';
 
                                     if (!is_null($timeTakenSeconds)) {
                                         $hours = intdiv($timeTakenSeconds, 3600);
@@ -125,12 +128,24 @@
                                         @endforeach
                                     </td>
                                     <td>
+                                        @if ($run->favoriteTouristSpot)
+                                            <span class="badge bg-success small">
+                                                <i class="bi bi-heart-fill me-1"></i>{{ $run->favoriteTouristSpot->name }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted small fst-italic">None selected</span>
+                                        @endif
+                                    </td>
+                                    <td>
                                         <div class="d-flex flex-wrap gap-1">
                                             @foreach ($criteriaNames as $cName)
                                                 <span
                                                     class="badge bg-light text-dark border small">{{ $cName }}</span>
                                             @endforeach
                                         </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted small">{{ $ipAddress }}</span>
                                     </td>
                                     <td class="text-end pe-4">
                                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
@@ -160,6 +175,7 @@
                     $submitterDisplay = $run->submitter_name ?? ($run->user?->name ?? 'Guest');
                     $timeTakenSeconds = $run->time_taken_seconds;
                     $timeTakenLabel = '—';
+                    $ipAddress = $run->ip_address ?? '—';
 
                     if (!is_null($timeTakenSeconds)) {
                         $hours = intdiv($timeTakenSeconds, 3600);
@@ -209,6 +225,20 @@
                                         <div class="fw-semibold">{{ $run->submitted_at?->format('d M Y, H:i') ?? '—' }}
                                         </div>
                                     </div>
+                                    <div class="col-sm-8">
+                                        <div class="text-muted small">Favorite Spot Selected</div>
+                                        <div class="fw-semibold">
+                                            @if ($run->favoriteTouristSpot)
+                                                <span class="text-success"><i class="bi bi-heart-fill me-1"></i>{{ $run->favoriteTouristSpot->name }}</span>
+                                            @else
+                                                <span class="text-muted fst-italic">None selected</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="text-muted small">IP Address</div>
+                                    <div class="fw-semibold">{{ $run->ip_address ?? '—' }}</div>
                                 </div>
 
                                 @if ($criteriaNames->isNotEmpty())

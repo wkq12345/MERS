@@ -23,12 +23,20 @@ class RecommendationRun extends Model
         'sus_responses',
         'sus_score',
         'sus_submitted_at',
+        'favorite_tourist_spot_id',
+        'ip_address',
     ];
+
+    public function favoriteTouristSpot()
+    {
+        return $this->belongsTo(TouristSpot::class, 'favorite_tourist_spot_id');
+    }
 
     protected $casts = [
         'criteria_id' => 'array',
         'criteria_weight' => 'array',
         'ranked_results' => 'array',
+        'ip_address' => 'string',
         'submitted_to_admin' => 'boolean',
         'submitted_at' => 'datetime',
         'started_at' => 'datetime',

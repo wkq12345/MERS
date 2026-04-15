@@ -25,7 +25,7 @@ class SuperAdminDashboardController extends Controller
 
     public function submissions()
     {
-        $submissions = RecommendationRun::with(['weightingMethod', 'user'])
+        $submissions = RecommendationRun::with(['weightingMethod', 'user', 'favoriteTouristSpot'])
             ->where('submitted_to_admin', true)
             ->latest('submitted_at')
             ->paginate(20);

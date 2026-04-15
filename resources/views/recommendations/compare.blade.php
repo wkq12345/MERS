@@ -63,10 +63,10 @@
                                     Start Method
                                 </a>
                             @else
-                                <button type="button"
-                                    class="block w-full text-center px-3 py-2 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-                                    Completed
-                                </button>
+                                <a href="{{ route('recommendations.showPrevious', ['method_code' => $method->code]) }}"
+                                    class="block w-full text-center px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 no-underline hover:no-underline">
+                                    View Result
+                                </a>
 
                                 <form id="clear-form-{{ $method->code }}" class="mt-2" method="POST" action="{{ route('recommendations.clear_method') }}">
                                     @csrf
@@ -80,6 +80,20 @@
                                         Clear Result and Redo
                                     </button>
                                 </form>
+                            @endif
+
+                            @if ($run)
+                                @if (!is_null($run->sus_submitted_at))
+                                    <a href="{{ route('recommendations.sus.index', ['method_code' => $method->code]) }}"
+                                        class="mt-2 block w-full text-center px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 no-underline hover:no-underline">
+                                        SUS Submitted (View)
+                                    </a>
+                                @else
+                                    <a href="{{ route('recommendations.sus.index', ['method_code' => $method->code]) }}"
+                                        class="mt-2 block w-full text-center px-3 py-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 no-underline hover:no-underline">
+                                        Your feedback matters! (Click here)
+                                    </a>
+                                @endif
                             @endif
                         </div>
                     @endforeach

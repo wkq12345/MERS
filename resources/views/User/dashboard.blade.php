@@ -199,10 +199,6 @@
                         <i class="bi bi-bar-chart-line"></i>
                         Compare Methods
                     </a>
-                    <a href="{{ route('recommendations.sus.index') }}" class="btn btn-light fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-clipboard2-pulse"></i>
-                        SUS Survey
-                    </a>
                 </div>
             </div>
         </div>

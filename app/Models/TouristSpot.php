@@ -12,6 +12,7 @@ class TouristSpot extends Model
     protected $table = 'tourist_spots';
 
     protected $fillable = [
+        'id',
         'name',
         'description',
         'review_link',
@@ -29,9 +30,5 @@ class TouristSpot extends Model
     public function ratings()
     {
         return $this->hasMany(TouristSpotCriteriaRating::class);
-    }
-    public function scores()
-    {
-        return $this->hasMany(Score::class);
     }
 }

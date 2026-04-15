@@ -20,7 +20,10 @@
         },
 
         openModal(spot) {
-            this.selectedSpot = spot;
+            this.selectedSpot = {
+                ...spot,
+                review_links: this.parseReviewLinks(spot.review_link)
+            };
             this.showModal = true;
             document.body.style.overflow = 'hidden';
         },
@@ -35,6 +38,34 @@
             if (!image) return 'https://placehold.co/600x400?text=No+Image';
             if (image.startsWith('http') || image.startsWith('data:')) return image;
             return '/storage/' + image;
+        },
+
+        parseReviewLinks(rawLinks) {
+            if (!rawLinks || typeof rawLinks !== 'string') return [];
+
+            return rawLinks
+                .split('|||||')
+                .map(link => link.trim())
+                .filter(link => link.length > 0)
+                .map(link => ({
+                    url: link,
+                    name: this.getProviderName(link)
+                }));
+        },
+
+        getProviderName(url) {
+            const lower = url.toLowerCase();
+
+            if (lower.includes('tripadvisor.')) return 'Tripadvisor';
+            if (lower.includes('klook.')) return 'Klook';
+            if (lower.includes('trip.com')) return 'Trip.com';
+
+            try {
+                const hostname = new URL(url).hostname.replace('www.', '');
+                return hostname || 'Open Link';
+            } catch (_) {
+                return 'Open Link';
+            }
         }
     }" class="container-fluid py-4">
 
@@ -131,14 +162,14 @@
                             <div class="card h-100 shadow-sm border-0 hover-lift transition-all" style="cursor: pointer;"
                                 @click="openModal(spot)">
                                 <div class="position-relative">
-                                    <img :src="getImageUrl(spot.image)" class="card-img-top object-fit-cover" :alt="spot.name"
-                                        style="height: 200px;">
-                                        <!-- Number of reviews might not be accurately count, but we keep it or change it -->
-                                        <span
-                                            class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 rounded-pill">
-                                            <i class="bi bi-star-fill text-warning me-1"></i>
-                                            <span x-text="spot.rating.toFixed(1)"></span>
-                                        </span>
+                                    <img :src="getImageUrl(spot.image)" class="card-img-top object-fit-cover"
+                                        :alt="spot.name" style="height: 200px;">
+                                    <!-- Number of reviews might not be accurately count, but we keep it or change it -->
+                                    <span
+                                        class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 rounded-pill">
+                                        <i class="bi bi-star-fill text-warning me-1"></i>
+                                        <span x-text="spot.rating.toFixed(1)"></span>
+                                    </span>
                                     <!-- Use PHP ternary logic or a default for category since DB might not have it -->
                                     <span class="position-absolute bottom-0 start-0 m-2 badge bg-primary"
                                         x-text="spot.category || 'General'"></span>
@@ -208,7 +239,8 @@
                                             <div class="d-flex align-items-center">
                                                 <i class="bi bi-star-fill text-warning me-1"></i>
                                                 <span class="fw-semibold" x-text="selectedSpot.rating.toFixed(1)"></span>
-                                                <span class="text-muted ms-1" x-text="selectedSpot.total_reviews > 0 ? '(' + selectedSpot.total_reviews.toLocaleString() + ' reviews)' : '(No reviews yet)'"></span>
+                                                <span class="text-muted ms-1"
+                                                    x-text="selectedSpot.total_reviews > 0 ? '(' + selectedSpot.total_reviews.toLocaleString() + ' reviews)' : '(No reviews yet)'"></span>
                                             </div>
                                             <div class="d-flex align-items-center">
                                                 <span class="badge bg-primary" x-text="selectedSpot.category"></span>
@@ -220,17 +252,23 @@
                                             x-text="selectedSpot.description || 'No description available'"></p>
 
                                         <!-- Detailed Criteria Ratings -->
-                                        <template x-if="selectedSpot.criteria_ratings && selectedSpot.criteria_ratings.length > 0">
+                                        <template
+                                            x-if="selectedSpot.criteria_ratings && selectedSpot.criteria_ratings.length > 0">
                                             <div class="mb-4">
                                                 <h5 class="fw-semibold mb-3">Detailed Ratings</h5>
                                                 <div class="row g-2">
-                                                    <template x-for="rating in selectedSpot.criteria_ratings" :key="rating.name">
+                                                    <template x-for="rating in selectedSpot.criteria_ratings"
+                                                        :key="rating.name">
                                                         <div class="col-md-6 col-lg-4">
-                                                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
-                                                                <span class="text-muted small" x-text="rating.name"></span>
+                                                            <div
+                                                                class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                                                <span class="text-muted small"
+                                                                    x-text="rating.name"></span>
                                                                 <div class="d-flex align-items-center">
-                                                                    <span class="fw-semibold me-1" x-text="rating.score"></span>
-                                                                    <i class="bi bi-star-fill text-warning" style="font-size: 0.8rem;"></i>
+                                                                    <span class="fw-semibold me-1"
+                                                                        x-text="rating.score"></span>
+                                                                    <i class="bi bi-star-fill text-warning"
+                                                                        style="font-size: 0.8rem;"></i>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -243,8 +281,10 @@
                                             <div>
                                                 <h5 class="fw-semibold mb-3">Read Reviews & Book</h5>
                                                 <div class="d-flex flex-wrap gap-2">
-                                                    <template x-for="(link, index) in selectedSpot.review_links" :key="index">
-                                                        <a :href="link.url" target="_blank" rel="noopener noreferrer"
+                                                    <template x-for="(link, index) in selectedSpot.review_links"
+                                                        :key="index">
+                                                        <a :href="link.url" target="_blank"
+                                                            rel="noopener noreferrer"
                                                             class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
                                                             <i class="bi bi-box-arrow-up-right"></i>
                                                             <span x-text="link.name"></span>

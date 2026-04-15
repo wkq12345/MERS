@@ -12,6 +12,7 @@ class CriteriaImport implements ToModel, WithHeadingRow, WithUpserts
     public function model(array $row)
     {
         return new Criteria([
+            'id' => $row['id'] ?? null,
             'name' => $row['name'] ?? null,
             'description' => $row['description'] ?? null,
             'criteria_type_id' => $row['criteria_type_id'] ?? null,
