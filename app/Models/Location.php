@@ -14,6 +14,7 @@ class Location extends Model
     protected $fillable = [
         'id',
         'name',
+        'image',
     ];
 
     public function touristSpots()

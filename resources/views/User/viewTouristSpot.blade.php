@@ -4,7 +4,7 @@
     {{-- Alpine.js Component --}}
     <div x-data="{
         search: '',
-        selectedLocations: [],
+        selectedLocations: @json(!empty($initialLocation) ? [$initialLocation] : []),
         minRating: 0,
         spots: {{ json_encode($touristSpots) }},
         selectedSpot: null,

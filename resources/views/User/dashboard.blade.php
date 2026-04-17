@@ -229,7 +229,7 @@
                     <p class="text-secondary small mb-3">
                         Discover different states and regions in Malaysia
                     </p>
-                    <a href="#" class="btn btn-primary px-4 d-flex align-items-center gap-2">
+                    <a href="{{ route('viewLocation') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
                         <i class="bi bi-map"></i> View Locations
                     </a>
                 </div>

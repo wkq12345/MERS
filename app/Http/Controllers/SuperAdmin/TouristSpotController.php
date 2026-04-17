@@ -38,6 +38,7 @@ class TouristSpotController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'image_url' => ['nullable', 'url'],
             'status' => ['nullable', 'boolean'],
+            'special_transportation' => ['nullable', 'boolean'],
             'ratings.*' => ['nullable', 'integer', 'min:1', 'max:9'],
         ]);
 
@@ -61,6 +62,7 @@ class TouristSpotController extends Controller
             'location_id' => $validated['location_id'] ?? null,
             'image' => $imagePath,
             'status' => $validated['status'] ?? true,
+            'special_transportation' => $validated['special_transportation'] ?? false,
         ]);
 
         $this->persistRatings($spot->id, $request->input('ratings', []));
@@ -96,6 +98,7 @@ class TouristSpotController extends Controller
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'image_url' => ['nullable', 'url'],
             'status' => ['nullable', 'boolean'],
+            'special_transportation' => ['nullable', 'boolean'],
             'ratings.*' => ['nullable', 'integer', 'min:1', 'max:9'],
         ]);
 
@@ -119,6 +122,7 @@ class TouristSpotController extends Controller
             'location_id' => $validated['location_id'] ?? null,
             'image' => $imagePath,
             'status' => $validated['status'] ?? $tourist_spot->status,
+            'special_transportation' => $validated['special_transportation'] ?? $tourist_spot->special_transportation,
         ]);
 
         TouristSpotCriteriaRating::where('tourist_spot_id', $tourist_spot->id)->delete();

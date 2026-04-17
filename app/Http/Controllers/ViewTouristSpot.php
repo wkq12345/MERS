@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Criteria;
 use App\Models\Location;
 use App\Models\TouristSpot;
+use Illuminate\Http\Request;
 
 class ViewTouristSpot extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $reviewCriteriaId = Criteria::query()
             ->where('name', 'C7')
@@ -47,6 +48,11 @@ class ViewTouristSpot extends Controller
             ->pluck('name')
             ->all();
 
-        return view('User.viewTouristSpot', compact('touristSpots', 'locations'));
+        $initialLocation = $request->query('location');
+        if (! in_array($initialLocation, $locations, true)) {
+            $initialLocation = null;
+        }
+
+        return view('User.viewTouristSpot', compact('touristSpots', 'locations', 'initialLocation'));
     }
 }

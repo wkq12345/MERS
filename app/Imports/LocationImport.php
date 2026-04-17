@@ -14,6 +14,7 @@ class LocationImport implements ToModel, WithHeadingRow, WithUpserts
         return new Location([
             'id' => $row['id'] ?? null,
             'name' => $row['name'],
+            'image' => $row['image'] ?? null,
         ]);
     }
 

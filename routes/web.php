@@ -8,6 +8,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\LocationController as SuperAdminLocationController;
 use App\Http\Controllers\SuperAdmin\TouristSpotController as SuperAdminTouristSpotController;
 use App\Http\Controllers\User\TouristSpotController as UserTouristSpotController;
+use App\Http\Controllers\User\LocationController as UserLocationController;
 use App\Http\Controllers\SuperAdmin\CriteriaController as SuperAdminCriteriaController;
 use App\Http\Controllers\SuperAdmin\CriteriaTypeController as SuperAdminCriteriaTypeController;
 use App\Http\Controllers\ImportDataController;
@@ -42,6 +43,7 @@ Route::get('/dashboard', [RecommendationController::class, 'dashboard'])->name('
 
 // user view tourist spot
 Route::get('/viewTouristSpot', [\App\Http\Controllers\ViewTouristSpot::class, 'index'])->name('viewTouristSpot');
+Route::get('/viewLocation', [UserLocationController::class, 'index'])->name('viewLocation');
 Route::get('/view-spots', [UserTouristSpotController::class, 'index'])->name('user.viewTouristSpot');
 
 // Super Admin protected routes

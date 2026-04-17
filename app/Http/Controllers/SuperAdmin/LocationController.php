@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LocationController extends Controller
 {
@@ -22,7 +23,23 @@ class LocationController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:location,name'],
+            'image_file' => ['nullable', 'image', 'max:2048'],
+            'image_url' => ['nullable', 'string', 'max:2048', 'url'],
         ]);
+
+        if (! $request->hasFile('image_file') && empty($validated['image_url'])) {
+            return back()
+                ->withErrors(['image' => 'Please upload an image or provide an image URL.'])
+                ->withInput();
+        }
+
+        if ($request->hasFile('image_file')) {
+            $validated['image'] = Storage::disk('public')->putFile('locations', $request->file('image_file'));
+        } else {
+            $validated['image'] = $validated['image_url'];
+        }
+
+        unset($validated['image_file'], $validated['image_url']);
 
         Location::create($validated);
         return redirect()->route('super-admin.locations.index')->with('success', 'Location added successfully.');
@@ -37,7 +54,18 @@ class LocationController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:location,name,' . $location->id],
+            'image_file' => ['nullable', 'image', 'max:2048'],
+            'image_url' => ['nullable', 'string', 'max:2048', 'url'],
         ]);
+
+        if ($request->hasFile('image_file')) {
+            $validated['image'] = Storage::disk('public')->putFile('locations', $request->file('image_file'));
+        } elseif (! empty($validated['image_url'])) {
+            $validated['image'] = $validated['image_url'];
+        }
+
+        unset($validated['image_file'], $validated['image_url']);
+
         $location->update($validated);
         return redirect()->route('super-admin.locations.index')->with('success', 'Location updated successfully.');
     }

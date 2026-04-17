@@ -19,7 +19,7 @@ class TouristSpot extends Model
         'image',
         'location_id',
         'status',
-
+        'special_transportation',
     ];
 
     public function location()

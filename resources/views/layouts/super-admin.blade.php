@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,7 +11,8 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
     <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -54,7 +56,8 @@
             padding: 1rem 0;
             /* Ensure dropdowns appear above page content */
             position: relative;
-            z-index: 1080; /* higher than alerts (1050) and default dropdown (1000) */
+            z-index: 1080;
+            /* higher than alerts (1050) and default dropdown (1000) */
         }
 
         .navbar-brand {
@@ -110,6 +113,7 @@
                 opacity: 0;
                 transform: translateY(-10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -165,6 +169,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -232,7 +237,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Footer */
@@ -256,6 +263,7 @@
 
     @stack('styles')
 </head>
+
 <body>
     <div id="app">
         <!-- Modern Navbar -->
@@ -265,8 +273,9 @@
                     {{ config('app.name', 'MERS') }}
                 </a>
 
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -283,7 +292,7 @@
                             $isSuperAdmin = $currentUser?->isSuperAdmin() ?? false;
                         @endphp
 
-                        @if(!$currentUser)
+                        @if (!$currentUser)
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('login') }}">
                                     <i class="bi bi-box-arrow-in-right me-1"></i>
@@ -298,26 +307,32 @@
                             </li>
                         @else
                             <li class="nav-item dropdown">
-                                <a id="navbarDropdown" class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button"
-                                   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <a id="navbarDropdown" class="nav-link dropdown-toggle d-flex align-items-center"
+                                    href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
                                     @php
-                                        $displayName = $currentUser->name ?? (isset($currentUser->email) ? strstr($currentUser->email, '@', true) : 'User');
+                                        $displayName =
+                                            $currentUser->name ??
+                                            (isset($currentUser->email)
+                                                ? strstr($currentUser->email, '@', true)
+                                                : 'User');
                                         $initial = strtoupper(substr($displayName, 0, 1));
                                     @endphp
                                     <span class="user-avatar">{{ $initial }}</span>
                                     <span class="d-none d-md-inline">{{ $displayName }}</span>
-                                    @if($isSuperAdmin)
+                                    @if ($isSuperAdmin)
                                         <span class="badge bg-warning text-dark ms-2">Super Admin</span>
                                     @endif
                                 </a>
 
                                 <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                     <div class="px-3 py-2 border-bottom">
-                                        <small class="text-muted">Signed in as {{ $isSuperAdmin ? 'super administrator' : 'User' }}</small>
+                                        <small class="text-muted">Signed in as
+                                            {{ $isSuperAdmin ? 'super administrator' : 'User' }}</small>
                                         <div class="fw-bold">{{ $currentUser->email ?? 'N/A' }}</div>
                                     </div>
 
-                                    @if($isSuperAdmin)
+                                    @if ($isSuperAdmin)
                                         <a class="dropdown-item" href="{{ route('super-admin.dashboard') }}">
                                             <i class="bi bi-speedometer2"></i>
                                             Dashboard
@@ -326,7 +341,7 @@
                                         {{ redirect()->route(route: 'logout')->with('error', 'You do not have access to this page.') }}
                                     @endif
 
-                                    <a class="dropdown-item" href="{{route('super-admin.profile.show')  }}">
+                                    <a class="dropdown-item" href="{{ route('super-admin.profile.show') }}">
                                         <i class="bi bi-person-circle"></i>
                                         Profile
                                     </a>
@@ -338,13 +353,16 @@
 
                                     <div class="dropdown-divider"></div>
 
-                                    <a class="dropdown-item text-danger" href="{{ $isSuperAdmin ? route('super-admin.logout') : route('logout') }}"
-                                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    <a class="dropdown-item text-danger"
+                                        href="{{ $isSuperAdmin ? route('super-admin.logout') : route('logout') }}"
+                                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                         <i class="bi bi-box-arrow-right"></i>
                                         Logout
                                     </a>
 
-                                    <form id="logout-form" action="{{ $isSuperAdmin ? route('super-admin.logout') : route('logout') }}" method="POST" class="d-none">
+                                    <form id="logout-form"
+                                        action="{{ $isSuperAdmin ? route('super-admin.logout') : route('logout') }}"
+                                        method="POST" class="d-none">
                                         @csrf
                                     </form>
                                 </div>
@@ -356,36 +374,41 @@
         </nav>
 
         <!-- Main Content -->
-        <main @if(View::hasSection('fullpage')) class="snap-root" @endif>
-            @if(View::hasSection('fullpage'))
+        <main @if (View::hasSection('fullpage')) class="snap-root" @endif>
+            @if (View::hasSection('fullpage'))
                 <!-- Flash messages still shown at top (overlay style) -->
-                <div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index:1050; width: min(90%, 800px);">
-                    @if(session('success'))
+                <div class="position-fixed top-0 start-50 translate-middle-x mt-3"
+                    style="z-index:1050; width: min(90%, 800px);">
+                    @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show mb-2" role="alert">
                             <i class="bi bi-check-circle-fill me-2"></i>
                             <strong>Success!</strong> {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('error'))
+                    @if (session('error'))
                         <div class="alert alert-danger alert-dismissible fade show mb-2" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             <strong>Error!</strong> {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('info'))
+                    @if (session('info'))
                         <div class="alert alert-info alert-dismissible fade show mb-2" role="alert">
                             <i class="bi bi-info-circle-fill me-2"></i>
                             <strong>Info!</strong> {{ session('info') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('warning'))
+                    @if (session('warning'))
                         <div class="alert alert-warning alert-dismissible fade show mb-2" role="alert">
                             <i class="bi bi-exclamation-circle-fill me-2"></i>
                             <strong>Warning!</strong> {{ session('warning') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
                 </div>
@@ -393,32 +416,36 @@
             @else
                 <div class="container">
                     <!-- Flash Messages -->
-                    @if(session('success'))
+                    @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <i class="bi bi-check-circle-fill me-2"></i>
                             <strong>Success!</strong> {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('error'))
+                    @if (session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             <strong>Error!</strong> {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('info'))
+                    @if (session('info'))
                         <div class="alert alert-info alert-dismissible fade show" role="alert">
                             <i class="bi bi-info-circle-fill me-2"></i>
                             <strong>Info!</strong> {{ session('info') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
-                    @if(session('warning'))
+                    @if (session('warning'))
                         <div class="alert alert-warning alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-circle-fill me-2"></i>
                             <strong>Warning!</strong> {{ session('warning') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     @endif
                     @yield('content')
@@ -427,7 +454,7 @@
         </main>
 
         <!-- Footer (hidden in fullpage mode) -->
-        @if(!View::hasSection('fullpage'))
+        @if (!View::hasSection('fullpage'))
             <footer class="footer">
                 <div class="container">
                     <div class="row">
@@ -436,7 +463,7 @@
                                 <i class="bi bi-geo-alt-fill me-2"></i>
                                 {{ config('app.name', 'MERS') }}
                             </h5>
-                            <p class="mb-0">Malaysia Ecotourism Recommenndation  System</p>
+                            <p class="mb-0">Malaysia Ecotourism Recommenndation System</p>
                             <small class="text-muted">© {{ date('Y') }} All rights reserved.</small>
                         </div>
                         <div class="col-md-6 text-md-end">
@@ -489,7 +516,8 @@
 
                     submitButton.disabled = true;
                     submitButton.classList.add('disabled');
-                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Importing...';
+                    submitButton.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Importing...';
                 });
             });
         });
@@ -497,4 +525,5 @@
 
     @stack('scripts')
 </body>
+
 </html>

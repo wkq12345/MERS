@@ -19,7 +19,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Name</th>
-                            <th>Created</th>
+                            <th>Image</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -27,7 +27,14 @@
                         @foreach ($locations as $location)
                             <tr>
                                 <td>{{ $location->name }}</td>
-                                <td>{{ $location->created_at?->diffForHumans() }}</td>
+                                <td>
+                                    @if ($location->image)
+                                        <img src="{{ filter_var($location->image, FILTER_VALIDATE_URL) ? $location->image : \Illuminate\Support\Facades\Storage::url($location->image) }}" alt="{{ $location->name }}"
+                                            class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                                    @else
+                                        <span class="text-muted">No image</span>
+                                    @endif
+                                </td>
                                 <td class="text-end">
                                     <a href="{{ route('super-admin.locations.edit', $location) }}"
                                         class="btn btn-sm btn-outline-secondary">

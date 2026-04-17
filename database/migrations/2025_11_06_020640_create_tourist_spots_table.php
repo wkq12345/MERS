@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('review_link')->nullable();
             $table->boolean('status')->default(true);
             $table->foreignId('location_id')->nullable()->constrained('location')->onDelete('set null');
+            $table->boolean('special_transportation')->default(false);
             $table->timestamps();
         });
     }

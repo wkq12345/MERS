@@ -80,13 +80,6 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="dashboardNavbar">
-                <div class="d-flex justify-content-center flex-grow-1 my-2 my-lg-0 px-lg-3">
-                    <div class="position-relative nav-search-wrap">
-                        <i class="bi bi-search search-icon"></i>
-                        <input type="text" class="form-control" placeholder="Search tourist spots, locations...">
-                    </div>
-                </div>
 
                 @auth
                     <div class="dropdown ms-lg-2">
