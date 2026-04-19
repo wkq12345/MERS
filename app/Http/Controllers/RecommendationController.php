@@ -385,59 +385,59 @@ class RecommendationController extends Controller
 
         $methodStatuses = $this->buildMethodStatuses($userId, $guestKey);
 
-        return redirect()->route('recommendations.results')->with('resultData', [
-            'results' => $results,
-            'touristSpots' => $touristSpots,
-            'separations' => $separations,
-            'normalizedWeights' => $normalizedWeights,
-            'rankedResults' => $results,
-            'selectedCriteria' => $selectedCriteriaPayload,
-            'criteriaSignature' => $criteriaSignature,
-            'currentMethodCode' => $weightingMethod->code,
-            'methodStatuses' => $methodStatuses,
-
-            'debug' => [
-                'decisionMatrix' => $decisionMatrix,
-                'normalizedMatrix' => $normalizedMatrix,
-                'normalizedWeights' => $normalizedWeights,
-                'weightedMatrix' => $weightedMatrix,
-                'idealBest' => $idealBest,
-                'idealWorst' => $idealWorst,
-                'separations' => $separations,
-                'relativeCloseness' => $relativeCloseness,
-            ]
-        ]);
+        return redirect()->route('recommendations.results')->with('resultDataRunId', $weightingMethod->id);
     }
 
     public function showResults(Request $request)
     {
-        if (!$request->session()->has('resultData')) {
+        $methodId = (int) $request->session()->get('resultDataRunId');
+
+        if (!$methodId) {
             return redirect()->route('recommendations.drm')
                 ->with('error', 'No recent calculation found. Please run the process again.');
         }
 
-        $request->session()->keep(['resultData']);
-        $data = $request->session()->get('resultData');
+        $actor = $this->resolveActorContext($request);
+        $run = RecommendationRun::query()
+            ->where('weighting_method_id', $methodId)
+            ->latest()
+            ->first();
 
-        $methodCode = $data['currentMethodCode'] ?? null;
-        $selectedFavorite = null;
-        if ($methodCode) {
-            $actor = $this->resolveActorContext($request);
-            $weightingMethod = WeightingMethod::where('code', $methodCode)->first();
-            if ($weightingMethod) {
-                $runQuery = \App\Models\RecommendationRun::query()
-                    ->where('weighting_method_id', $weightingMethod->id)
-                    ->latest();
-                $this->applyActorScope($runQuery, $actor['user_id'], $actor['guest_key']);
-                $run = $runQuery->first();
-                if ($run) {
-                    $selectedFavorite = $run->favorite_tourist_spot_id;
-                }
-            }
+        if (!$run) {
+            return redirect()->route('recommendations.drm')
+                ->with('error', 'Calculation result not found.');
         }
-        $data['selectedFavorite'] = $selectedFavorite;
 
-        return view('recommendations.results', $data);
+        // Fetch fresh data from DB for display
+        $touristSpots = TouristSpot::with(['location', 'ratings'])
+            ->where('status', true)
+            ->get();
+
+        $selectedCriteria = Criteria::whereIn('id', collect($run->criteria_id)->toArray())
+            ->get()
+            ->map(function ($criterion) {
+                return [
+                    'id' => $criterion->id,
+                    'name' => $criterion->name,
+                ];
+            })
+            ->values();
+
+        $methodStatuses = $this->buildMethodStatuses($actor['user_id'], $actor['guest_key']);
+
+        $selectedFavorite = $run->favorite_tourist_spot_id;
+
+        return view('recommendations.results', [
+            'results' => $run->ranked_results ?? [],
+            'touristSpots' => $touristSpots,
+            'selectedCriteria' => $selectedCriteria,
+            'normalizedWeights' => $run->criteria_weight ?? [],
+            'criteriaSignature' => $run->criteria_signature,
+            'currentMethodCode' => optional($run->weightingMethod)->code,
+            'methodStatuses' => $methodStatuses,
+            'separations' => [],
+            'selectedFavorite' => $selectedFavorite,
+        ]);
     }
 
     public function showPreviousResult(Request $request)
@@ -499,7 +499,6 @@ class RecommendationController extends Controller
             'currentMethodCode' => $weightingMethod->code,
             'methodStatuses' => $methodStatuses,
             'separations' => [],
-            'debug' => [],
             'selectedFavorite' => $run->favorite_tourist_spot_id,
         ]);
     }

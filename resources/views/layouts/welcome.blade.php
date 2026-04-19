@@ -292,7 +292,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('user.dashboard') }}">
-                                    <i class="bi bi-speedometer2 me-1"></i>
+                                    <i class="bi bi-door-open me-1"></i>
                                     Start
                                 </a>
                             </li>
@@ -424,34 +424,9 @@
                     @yield('content')
                 </div>
             @endif
-        </main>
 
-        <!-- Footer (hidden in fullpage mode) -->
-        @if(!View::hasSection('fullpage'))
-            <footer class="footer">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5 class="text-white mb-3">
-                                <i class="bi bi-geo-alt-fill me-2"></i>
-                                {{ config('app.name', 'MERS') }}
-                            </h5>
-                            <p class="mb-0">Malaysia Ecotourism Recommenndation  System</p>
-                            <small class="text-muted">© {{ date('Y') }} All rights reserved.</small>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <h6 class="text-white mb-3">Quick Links</h6>
-                            <div class="d-flex flex-column flex-md-row justify-content-md-end gap-3">
-                                <a href="#">About</a>
-                                <a href="#">Contact</a>
-                                <a href="#">Privacy Policy</a>
-                                <a href="#">Terms of Service</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </footer>
-        @endif
+        </main>
+        @include('layouts.partials.footer')
     </div>
 
     <!-- Bootstrap Bundle with Popper -->

@@ -18,6 +18,7 @@ class TouristSpotImport implements ToModel, WithHeadingRow, WithUpserts
             'image' => $row['image'] ?? null,
             'review_link' => $this->sanitizeReviewLink($row['review_link'] ?? null),
             'status' => $row['status'] ?? null,
+            'special_transportation' => $row['special_transportation'] ?? null,
             'location_id' => $this->sanitizeLocationId($row['location_id'] ?? null),
         ]);
     }

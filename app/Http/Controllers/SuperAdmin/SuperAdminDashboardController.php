@@ -8,19 +8,46 @@ use App\Models\TouristSpot;
 use App\Models\Criteria;
 use App\Models\RecommendationRun;
 use App\Models\SusSubmission;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminDashboardController extends Controller
 {
     public function index()
     {
+        $recentThreshold = now()->subDays(30)->timestamp;
+
+        $authenticatedVisitors = DB::table('sessions')
+            ->where('last_activity', '>=', $recentThreshold)
+            ->whereNotNull('user_id')
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $guestVisitors = DB::table('sessions')
+            ->where('last_activity', '>=', $recentThreshold)
+            ->whereNull('user_id')
+            ->whereNotNull('ip_address')
+            ->distinct('ip_address')
+            ->count('ip_address');
+
         $stats = [
             'locations' => Location::count(),
             'spots' => TouristSpot::count(),
             'criteria' => Criteria::count(),
+            'people_visit' => $authenticatedVisitors + $guestVisitors,
             'submissions' => RecommendationRun::where('submitted_to_admin', true)->count(),
             'sus_submissions' => SusSubmission::count(),
         ];
-        return view('SuperAdmin.dashboard', compact('stats'));
+
+        $chartData = [
+            'labels' => ['People Visit (30 days)', 'Submissions', 'SUS Submissions'],
+            'values' => [
+                $stats['people_visit'],
+                $stats['submissions'],
+                $stats['sus_submissions'],
+            ],
+        ];
+
+        return view('SuperAdmin.dashboard', compact('stats', 'chartData'));
     }
 
     public function submissions()

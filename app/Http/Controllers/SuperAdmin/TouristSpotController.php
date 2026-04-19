@@ -62,7 +62,7 @@ class TouristSpotController extends Controller
             'location_id' => $validated['location_id'] ?? null,
             'image' => $imagePath,
             'status' => $validated['status'] ?? true,
-            'special_transportation' => $validated['special_transportation'] ?? false,
+            'special_transportation' => $validated['special_transportation'] ?? true,
         ]);
 
         $this->persistRatings($spot->id, $request->input('ratings', []));

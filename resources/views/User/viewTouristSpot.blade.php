@@ -4,9 +4,9 @@
     {{-- Alpine.js Component --}}
     <div x-data="{
         search: '',
-        selectedLocations: @json(!empty($initialLocation) ? [$initialLocation] : []),
+        selectedLocations: {{ Illuminate\Support\Js::from(!empty($initialLocation) ? [$initialLocation] : []) }},
         minRating: 0,
-        spots: {{ json_encode($touristSpots) }},
+        spots: {{ Illuminate\Support\Js::from($touristSpots) }},
         selectedSpot: null,
         showModal: false,
 
@@ -66,6 +66,24 @@
             } catch (_) {
                 return 'Open Link';
             }
+        },
+
+        isDistanceCriteria(name) {
+            return /distance/i.test(name || '');
+        },
+
+        isReviewStarCriteria(name) {
+            return /review\s*star/i.test(name || '');
+        },
+
+        formatCriteriaValue(rating) {
+            const value = rating?.score ?? rating?.rating ?? rating?.value ?? '';
+
+            if (this.isDistanceCriteria(rating?.name)) {
+                return `${value} km`;
+            }
+
+            return value;
         }
     }" class="container-fluid py-4">
 
@@ -261,14 +279,20 @@
                                                         :key="rating.name">
                                                         <div class="col-md-6 col-lg-4">
                                                             <div
-                                                                class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                                                class="d-flex justify-content-between align-items-center bg-light p-2 rounded h-100">
                                                                 <span class="text-muted small"
                                                                     x-text="rating.name"></span>
                                                                 <div class="d-flex align-items-center">
-                                                                    <span class="fw-semibold me-1"
-                                                                        x-text="rating.score"></span>
-                                                                    <i class="bi bi-star-fill text-warning"
-                                                                        style="font-size: 0.8rem;"></i>
+                                                                    <template x-if="isReviewStarCriteria(rating.name)">
+                                                                        <span class="d-inline-flex align-items-center fw-semibold text-warning">
+                                                                            <i class="bi bi-star-fill me-1"></i>
+                                                                            <span x-text="formatCriteriaValue(rating)"></span>
+                                                                        </span>
+                                                                    </template>
+
+                                                                    <template x-if="!isReviewStarCriteria(rating.name)">
+                                                                        <span class="fw-semibold" x-text="formatCriteriaValue(rating)"></span>
+                                                                    </template>
                                                                 </div>
                                                             </div>
                                                         </div>

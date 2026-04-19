@@ -1,72 +1,639 @@
 @extends('layouts.user')
 
 @push('styles')
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            important: true,
-            corePlugins: {
-                preflight: false,
-            }
-        }
-    </script>
     <style>
-        /* Essential preflight for buttons and inputs used in the design */
-        button {
-            background-color: transparent;
-            background-image: none;
-            cursor: pointer;
-        }
-        .bg-white { background-color: #fff !important; }
+    :root {
+      --drm-page-bg: #ffffff;
+      --drm-text-primary: #111827;
+      --drm-text-secondary: #6b7280;
+      --drm-border: #e5e7eb;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .drm-page {
+      min-height: 100vh;
+      background: var(--drm-page-bg);
+    }
+
+    .drm-shell {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .drm-header {
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .drm-title {
+      margin: 0 0 0.5rem;
+      color: var(--drm-text-primary);
+      font-size: 1.5rem;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .drm-subtitle {
+      margin: 0;
+      color: var(--drm-text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .drm-btn,
+    .rating-btn,
+    .modal-close-btn {
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+    }
+
+    .drm-btn-primary {
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: 500;
+      color: #fff;
+      background: #7c3aed;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      transition: background-color 0.2s ease;
+    }
+
+    .drm-btn-primary:hover {
+      background: #6d28d9;
+    }
+
+    .error-alert {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      color: #b91c1c;
+      border-left: 4px solid #ef4444;
+      background: #fee2e2;
+    }
+
+    .criteria-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .drm-card {
+      --grad-start: #a855f7;
+      --grad-end: #ec4899;
+      --tint-bg: rgba(245, 243, 255, 0.95);
+      --accent: #a855f7;
+      --accent-soft: #c084fc;
+      --info-color: #9333ea;
+      position: relative;
+      margin-top: 1.5rem;
+      border-radius: 0.75rem;
+      background: #fff;
+      box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .drm-card.palette-0 {
+      --grad-start: #a855f7;
+      --grad-end: #ec4899;
+      --tint-bg: rgba(245, 243, 255, 0.95);
+      --accent: #a855f7;
+      --accent-soft: #c084fc;
+      --info-color: #9333ea;
+    }
+
+    .drm-card.palette-1 {
+      --grad-start: #3b82f6;
+      --grad-end: #06b6d4;
+      --tint-bg: rgba(239, 246, 255, 0.95);
+      --accent: #3b82f6;
+      --accent-soft: #60a5fa;
+      --info-color: #2563eb;
+    }
+
+    .drm-card.palette-2 {
+      --grad-start: #22c55e;
+      --grad-end: #10b981;
+      --tint-bg: rgba(240, 253, 244, 0.95);
+      --accent: #22c55e;
+      --accent-soft: #4ade80;
+      --info-color: #16a34a;
+    }
+
+    .drm-card.palette-3 {
+      --grad-start: #f97316;
+      --grad-end: #ef4444;
+      --tint-bg: rgba(255, 247, 237, 0.95);
+      --accent: #f97316;
+      --accent-soft: #fb923c;
+      --info-color: #ea580c;
+    }
+
+    .drm-card.palette-4 {
+      --grad-start: #6366f1;
+      --grad-end: #a855f7;
+      --tint-bg: rgba(238, 242, 255, 0.95);
+      --accent: #6366f1;
+      --accent-soft: #818cf8;
+      --info-color: #4f46e5;
+    }
+
+    .card-border {
+      position: absolute;
+      inset: 0;
+      border-radius: 0.75rem;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+      pointer-events: none;
+    }
+
+    .card-border-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 9px;
+      background: #fff;
+    }
+
+    .card-body {
+      position: relative;
+      padding: 1.5rem;
+    }
+
+    .criterion-head {
+      margin-bottom: 1rem;
+    }
+
+    .criterion-top {
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .criterion-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .criterion-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.5rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+    }
+
+    .criterion-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: transparent;
+      background: linear-gradient(90deg, var(--grad-start), var(--grad-end));
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .rating-badge {
+      border-radius: 9999px;
+      padding: 0.625rem 1.25rem;
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      background: linear-gradient(90deg, var(--grad-start), var(--grad-end));
+    }
+
+    .criteria-info-box {
+      margin-bottom: 1.25rem;
+      border-left: 3.5px solid var(--accent);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      gap: 0.75rem;
+      background: var(--tint-bg);
+    }
+
+    .criteria-info-icon {
+      margin-top: 0.125rem;
+      flex-shrink: 0;
+      font-size: 1.125rem;
+      color: var(--info-color);
+    }
+
+    .criteria-info-text {
+      margin: 0 0 0.25rem;
+      color: #1f2937;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .criteria-info-text strong {
+      color: #111827;
+    }
+
+    .criteria-question {
+      margin: 0 0 1rem;
+      color: #374151;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .rating-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .rating-scale {
+      margin-bottom: 0.75rem;
+      padding: 0 0.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #6b7280;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .rating-scale-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .dot {
+      width: 0.375rem;
+      height: 0.375rem;
+      border-radius: 9999px;
+    }
+
+    .dot-red {
+      background: #ef4444;
+    }
+
+    .dot-green {
+      background: #22c55e;
+    }
+
+    .rating-grid {
+      display: grid;
+      grid-template-columns: repeat(9, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .rating-btn {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .rating-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .btn-bg-wrapper {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      border-radius: 14px;
+      border: 2px solid #d1d5db;
+      transition: all 0.2s ease;
+    }
+
+    .inner-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      background: #fff;
+      transition: all 0.2s ease;
+    }
+
+    .btn-text {
+      position: relative;
+      z-index: 20;
+      color: #4b5563;
+      font-size: 1.125rem;
+      font-weight: 900;
+      transition: all 0.2s ease;
+    }
+
+    .rating-btn.is-selected .btn-bg-wrapper {
+      z-index: 20;
+      border-color: transparent;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .rating-btn.is-selected .inner-bg {
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+    }
+
+    .rating-btn.is-selected .btn-text {
+      color: #fff;
+      font-size: 1.25rem;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+
+    .progress-box {
+      margin-top: 2rem;
+      border: 2px solid #a855f7;
+      border-radius: 0.75rem;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .progress-inner {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .progress-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .progress-message {
+      margin: 0;
+      color: #374151;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .text-success {
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    .text-strong {
+      font-weight: 600;
+    }
+
+    .proceed-btn {
+      border-radius: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border: 0;
+    }
+
+    .proceed-btn.is-enabled {
+      color: #374151;
+      background: #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+    }
+
+    .proceed-btn.is-enabled:hover {
+      background: #d1d5db;
+    }
+
+    .proceed-btn.is-disabled {
+      color: #6b7280;
+      background: #e5e7eb;
+      cursor: not-allowed;
+    }
+
+    .criteria-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      min-height: 100vh;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .criteria-modal-panel {
+      width: 100%;
+      max-width: 42rem;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      border-radius: 0.75rem;
+      background: #fff;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      margin: 0;
+      color: #111827;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .modal-subtitle {
+      margin: 0.25rem 0 0;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .modal-close-btn {
+      color: #9ca3af;
+      transition: color 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      color: #4b5563;
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      background: #f9fafb;
+    }
+
+    .criteria-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .criteria-option {
+      padding: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      transition: border-color 0.2s ease;
+    }
+
+    .criteria-option:hover {
+      border-color: #c084fc;
+    }
+
+    .criteria-checkbox {
+      width: 1rem;
+      height: 1rem;
+      margin-top: 0.2rem;
+      accent-color: #9333ea;
+      cursor: pointer;
+    }
+
+    .criteria-option-name {
+      display: block;
+      color: #1f2937;
+      font-weight: 700;
+    }
+
+    .criteria-option-desc {
+      margin-top: 0.2rem;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      color: #6b7280;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .modal-footer {
+      padding: 1.25rem;
+      border-top: 1px solid #f3f4f6;
+      border-radius: 0 0 0.75rem 0.75rem;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-count {
+      margin: 0;
+      color: #4b5563;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .modal-count-value {
+      color: #9333ea;
+      font-weight: 700;
+    }
+
+    .modal-confirm-btn {
+      border: 0;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      color: #fff;
+      font-weight: 500;
+      background: #7c3aed;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .modal-confirm-btn:hover {
+      background: #6d28d9;
+    }
+
+    .modal-confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 900px) {
+      .rating-grid {
+        gap: 0.5rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .drm-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .criterion-top {
+        flex-direction: column;
+      }
+
+      .progress-inner {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .criteria-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .drm-shell {
+        padding: 1.25rem 0.75rem;
+      }
+
+      .criteria-grid {
+        grid-template-columns: 1fr;
+      }
+    }
     </style>
 @endpush
 
 @section('content')
-<!-- Hidden safely list dynamic classes for Tailwind CDN -->
-<div class="hidden bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-sm text-gray-500 cursor-not-allowed border-2 border-gray-200 text-green-600"></div>
-
 @php
-   $gradients = [
-       'from-purple-500 to-pink-500',
-       'from-blue-500 to-cyan-500',
-       'from-green-500 to-emerald-500',
-       'from-orange-500 to-red-500',
-       'from-indigo-500 to-purple-500'
-   ];
-   $bgColors = ['bg-purple-50', 'bg-blue-50', 'bg-green-50', 'bg-orange-50', 'bg-indigo-50'];
-   $accentHoverBorder = ['hover:border-purple-400', 'hover:border-blue-400', 'hover:border-green-400', 'hover:border-orange-400', 'hover:border-indigo-400'];
-   $accentHoverBg = ['hover:bg-purple-50', 'hover:bg-blue-50', 'hover:bg-green-50', 'hover:bg-orange-50', 'hover:bg-indigo-50'];
-   $accentBorder = ['border-purple-500', 'border-blue-500', 'border-green-500', 'border-orange-500', 'border-indigo-500'];
-   $accentTextInfo = ['text-purple-600', 'text-blue-600', 'text-green-600', 'text-orange-600', 'text-indigo-600'];
-   $accentTextExpl = ['text-purple-900', 'text-blue-900', 'text-green-900', 'text-orange-900', 'text-indigo-900'];
-
    $icons = ['bi-geo-alt', 'bi-building', 'bi-box', 'bi-star', 'bi-tag'];
 
    $index = 0;
-   $allCriteriaIds = [];
-   foreach($criteriaTypes as $type) {
-       foreach($type->criteria as $criterion) {
-           $allCriteriaIds[] = $criterion->id;
-       }
-   }
 @endphp
 
-<div class="min-h-screen bg-white">
-  <div class="max-w-4xl mx-auto px-6 py-8">
-    <div class="mb-8 flex justify-between items-center">
+<div class="drm-page">
+  <div class="drm-shell">
+  <div class="drm-header">
       <div>
-        <h2 class="text-2xl mb-2 font-bold text-gray-900">Direct Rating Method</h2>
-        <p class="text-gray-500 text-sm">
+    <h2 class="drm-title">Direct Rating Method</h2>
+    <p class="drm-subtitle">
           Rate exactly four criteria from 1 to 9 based on their importance to you. (1 = Not Important, 9 = Very Important)
         </p>
       </div>
-      <button type="button" onclick="openCriteriaModal()" class="px-4 py-2 bg-purple-600 text-white font-medium rounded-lg shadow hover:bg-purple-700 transition">
+      <button type="button" onclick="openCriteriaModal()" class="drm-btn drm-btn-primary">
         Select Criteria
       </button>
     </div>
 
     @if(session('error'))
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+    <div class="error-alert">
             <p>{{ session('error') }}</p>
         </div>
     @endif
@@ -74,80 +641,69 @@
     <form action="{{ route('recommendations.calculate') }}" method="POST" id="ratingForm">
       @csrf
     <input type="hidden" name="weighting_method" value="drm">
-      <div class="space-y-6">
+      <div class="criteria-list">
         @foreach($criteriaTypes as $type)
           @foreach($type->criteria as $criterion)
             @php
-              $colorIdx = $index % count($gradients);
-              $gradient = $gradients[$colorIdx];
-              $bgColor = $bgColors[$colorIdx];
-
-              $hBorder = $accentHoverBorder[$colorIdx];
-              $hBg = $accentHoverBg[$colorIdx];
-              $borderColor = $accentBorder[$colorIdx];
-              $txtInfo = $accentTextInfo[$colorIdx];
-              $txtExpl = $accentTextExpl[$colorIdx];
+              $colorIdx = $index % 5;
               $icon = $icons[$colorIdx];
 
               $currentRating = $userWeights[$criterion->id] ?? 0;
               $index++;
-
-              $selectedClass = "bg-white text-gray-700 border-2 rounded-lg transition-all scale-100 shadow-md font-bold text-lg";
-              $unselectedClass = "bg-white text-gray-700 border border-gray-300 rounded-lg hover:border-$hBorder hover:bg-$hBg hover:scale-105 transition-all font-bold text-lg";
             @endphp
 
-            <div class="relative bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] transition-shadow mt-6 criteria-card hidden" data-criteria-id="{{ $criterion->id }}" id="card_{{ $criterion->id }}">
+            <div class="criteria-card drm-card palette-{{ $colorIdx }} hidden" data-criteria-id="{{ $criterion->id }}" id="card_{{ $criterion->id }}">
               <!-- Gradient Border Wrapper -->
-              <div class="absolute inset-0 rounded-xl bg-gradient-to-br {{ $gradient }} pointer-events-none" style="padding: 3px;">
-                <div class="w-full h-full bg-white rounded-[9px]"></div>
+              <div class="card-border">
+                <div class="card-border-inner"></div>
               </div>
 
-              <div class="relative p-6">
+              <div class="card-body">
                 <!-- Hidden Input -->
                 <input type="hidden" name="score_{{ $criterion->id }}" id="input_{{ $criterion->id }}" value="{{ $currentRating }}">
 
-                <div class="mb-4">
-                  <div class="flex items-start justify-between mb-3">
-                    <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 bg-gradient-to-br {{ $gradient }} rounded-xl flex items-center justify-center shadow-sm">
-                        <i class="bi {{ $icon }} text-white text-2xl"></i>
+                <div class="criterion-head">
+                  <div class="criterion-top">
+                    <div class="criterion-meta">
+                      <div class="criterion-icon">
+                        <i class="bi {{ $icon }}"></i>
                       </div>
                       <div>
-                        <h3 class="text-xl font-bold bg-gradient-to-r {{ $gradient }} bg-clip-text text-transparent">
+                        <h3 class="criterion-title">
                           {{ $index }}. {{ $criterion->name }}
                         </h3>
                       </div>
                     </div>
-                    <span id="badge_{{ $criterion->id }}" class="px-5 py-2.5 bg-gradient-to-r {{ $gradient }} text-white rounded-full text-sm font-bold shadow-md {{ $currentRating > 0 ? '' : 'hidden' }}">
+                    <span id="badge_{{ $criterion->id }}" class="rating-badge {{ $currentRating > 0 ? '' : 'hidden' }}">
                       Rating: <span class="rating-display">{{ $currentRating }}</span>
                     </span>
                   </div>
 
-                  <div class="flex gap-3 p-4 rounded-[14px] mb-5 border-l-[3.5px] {{ $borderColor }} {{ $bgColor }}" style="--tw-bg-opacity: 0.4;">
-                    <i class="bi bi-info-circle {{ $txtInfo }} mt-0.5 flex-shrink-0 text-lg"></i>
+                  <div class="criteria-info-box">
+                    <i class="bi bi-info-circle criteria-info-icon"></i>
                     <div>
-                      <p class="text-sm text-gray-800 mb-1">
-                        <span class="font-bold text-gray-900">Explanation:</span> {{ $criterion->description ?? 'Description for this criteria.' }}
+                      <p class="criteria-info-text">
+                        <strong>Explanation:</strong> {{ $criterion->description ?? 'Description for this criteria.' }}
                       </p>
                     </div>
                   </div>
 
-                  <p class="text-gray-700 text-base mb-4 font-medium">Do you consider {{ strtolower($criterion->name) }} important to you?</p>
+                  <p class="criteria-question">Do you consider {{ strtolower($criterion->name) }} important to you?</p>
                 </div>
 
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between text-xs font-semibold text-gray-500 mb-3 px-1">
-                    <span class="flex items-center gap-1">
-                      <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                <div class="rating-wrap">
+                  <div class="rating-scale">
+                    <span class="rating-scale-item">
+                      <span class="dot dot-red"></span>
                       Not Important
                     </span>
-                    <span class="flex items-center gap-1">
+                    <span class="rating-scale-item">
                       Very Important
-                      <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      <span class="dot dot-green"></span>
                     </span>
                   </div>
 
-                  <div class="grid grid-cols-9 gap-3">
+                  <div class="rating-grid">
                     @for($i = 1; $i <= 9; $i++)
                       @php
                         $isSelected = ($currentRating == $i);
@@ -156,14 +712,13 @@
                         type="button"
                         onclick="setRating('{{ $criterion->id }}', {{ $i }})"
                         id="btn_{{ $criterion->id }}_{{ $i }}"
-                        class="relative rating-btn-{{ $criterion->id }} aspect-square flex items-center justify-center rounded-[14px] text-gray-700 font-bold transition-all z-10 hover:shadow-md hover:-translate-y-0.5"
-                        data-color-idx="{{ $colorIdx }}"
-                        data-gradient="{{ $gradient }}"
+                        class="rating-btn rating-btn-{{ $criterion->id }} {{ $isSelected ? 'is-selected' : '' }}"
+                        data-palette="{{ $colorIdx }}"
                       >
-                         <div class="btn-bg-wrapper absolute inset-0 rounded-[14px] transition-all {{ $isSelected ? 'shadow-[0_4px_12px_rgba(0,0,0,0.15)] scale-110 z-20' : 'border-[2px] border-gray-300 z-10' }}">
-                            <div class="inner-bg w-full h-full rounded-[14px] transition-all {{ $isSelected ? 'bg-gradient-to-br ' . $gradient : 'bg-white' }}"></div>
+                         <div class="btn-bg-wrapper">
+                           <div class="inner-bg"></div>
                          </div>
-                         <span class="btn-text relative z-20 transition-all font-black text-lg {{ $isSelected ? 'text-white text-xl drop-shadow-md' : 'text-gray-600' }}">{{ $i }}</span>
+                         <span class="btn-text">{{ $i }}</span>
                       </button>
                     @endfor
                   </div>
@@ -175,22 +730,22 @@
         @endforeach
       </div>
 
-      <div class="mt-8 bg-white border-2 border-purple-500 rounded-xl shadow-sm transition-shadow">
-        <div class="p-6 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-xl">📝</span>
-            <p id="completionMessage" class="text-gray-700 font-medium text-sm">
+      <div class="progress-box">
+        <div class="progress-inner">
+          <div class="progress-label">
+            <span>📝</span>
+            <p id="completionMessage" class="progress-message">
               @if(count($userWeights) >= 4)
-                <span class="font-semibold text-green-600">4 criteria selected</span>
+                <span class="text-success">4 criteria selected</span>
               @else
-                <span class="font-semibold"><span id="answeredCount">{{ count($userWeights) }}</span> of 4</span> criteria selected
+                <span class="text-strong"><span id="answeredCount">{{ count($userWeights) }}</span> of 4</span> criteria selected
               @endif
             </p>
           </div>
           <button
             type="submit"
             id="proceedBtn"
-            class="px-5 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm {{ count($userWeights) >= 4 ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-sm' : 'bg-gray-200 text-gray-500 cursor-not-allowed' }}"
+            class="proceed-btn {{ count($userWeights) >= 4 ? 'is-enabled' : 'is-disabled' }}"
             {{ count($userWeights) >= 4 ? '' : 'disabled' }}
           >
             <span>Proceed to Rankings</span>
@@ -204,27 +759,27 @@
 </div>
 
 <!-- Criteria Selection Modal -->
-<div id="criteriaModal" class="fixed inset-0 min-h-screen bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+<div id="criteriaModal" class="criteria-modal hidden">
+  <div class="criteria-modal-panel" onclick="event.stopPropagation()">
+    <div class="modal-header">
       <div>
-        <h3 class="text-xl font-bold text-gray-900">Select 4 Criteria</h3>
-        <p class="text-sm text-gray-500 mt-1">Choose exactly four criteria you want to rate.</p>
+        <h3 class="modal-title">Select 4 Criteria</h3>
+        <p class="modal-subtitle">Choose exactly four criteria you want to rate.</p>
       </div>
-      <button onclick="closeCriteriaModal()" class="text-gray-400 hover:text-gray-600 transition">
-        <i class="bi bi-x-lg text-xl"></i>
+      <button onclick="closeCriteriaModal()" class="modal-close-btn">
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
-    <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="modal-body">
+      <div class="criteria-grid">
         @foreach($criteriaTypes as $type)
           @foreach($type->criteria as $criterion)
-            <label class="flex items-start p-4 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-purple-400 transition shadow-sm">
-              <input type="checkbox" name="modal_criteria" value="{{ $criterion->id }}" class="mt-1 mr-3 criteria-checkbox w-4 h-4 text-purple-600 rounded focus:ring-purple-500">
+            <label class="criteria-option">
+              <input type="checkbox" name="modal_criteria" value="{{ $criterion->id }}" class="criteria-checkbox">
               <div>
-                <span class="font-bold text-gray-800 block">{{ $criterion->name }}</span>
-                <span class="text-xs text-gray-500 line-clamp-2 md:line-clamp-1 mt-0.5">{{ $criterion->description }}</span>
+                <span class="criteria-option-name">{{ $criterion->name }}</span>
+                <span class="criteria-option-desc">{{ $criterion->description }}</span>
               </div>
             </label>
           @endforeach
@@ -232,11 +787,11 @@
       </div>
     </div>
 
-    <div class="p-5 border-t border-gray-100 bg-white rounded-b-xl flex justify-between items-center">
-      <span class="text-sm font-medium text-gray-600">
-        Selected: <span id="modalSelectedCount" class="font-bold text-purple-600">0</span> / 4
-      </span>
-      <button id="modalConfirmBtn" onclick="confirmCriteriaSelection()" class="px-6 py-2 bg-purple-600 text-white font-medium rounded-lg shadow hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+    <div class="modal-footer">
+      <p class="modal-count">
+        Selected: <span id="modalSelectedCount" class="modal-count-value">0</span> / 4
+      </p>
+      <button id="modalConfirmBtn" onclick="confirmCriteriaSelection()" class="modal-confirm-btn" disabled>
         Confirm Selection
       </button>
     </div>
@@ -361,27 +916,11 @@
       btnGroup.forEach(btn => {
           const parts = btn.id.split('_');
           const btnValue = parseInt(parts[parts.length - 1], 10);
-          const gradientClass = btn.getAttribute('data-gradient');
-          const bgWrapper = btn.querySelector('.btn-bg-wrapper');
-          const innerBg = btn.querySelector('.inner-bg');
-          const btnText = btn.querySelector('.btn-text');
 
           if (!isDeselecting && btnValue === value) {
-              // Active state
-              bgWrapper.className = `btn-bg-wrapper absolute inset-0 rounded-[14px] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.15)] scale-110 z-20`;
-
-              // Apply thick padding for the selected state and force gradient onto content too
-              bgWrapper.style.padding = '0';
-              innerBg.className = `inner-bg w-full h-full rounded-[14px] transition-all bg-gradient-to-br ${gradientClass}`;
-
-              btnText.className = `btn-text relative z-20 transition-all font-black text-xl text-white drop-shadow-md`;
+            btn.classList.add('is-selected');
           } else {
-              // Inactive state - just normal line border
-              bgWrapper.className = `btn-bg-wrapper absolute inset-0 rounded-[14px] transition-all border-[2px] border-gray-300 z-10`;
-              bgWrapper.style.padding = '0';
-              innerBg.className = `inner-bg w-full h-full rounded-[12px] transition-all bg-white`;
-
-              btnText.className = `btn-text relative z-20 transition-all font-black text-lg text-gray-600`;
+            btn.classList.remove('is-selected');
           }
       });
 
@@ -411,14 +950,14 @@
 
       if (isComplete) {
           proceedBtn.disabled = false;
-          proceedBtn.className = "px-5 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-sm";
+          proceedBtn.className = "proceed-btn is-enabled";
 
-          completionMessage.innerHTML = "<span class='font-semibold text-green-600'>4 criteria rated</span>";
+          completionMessage.innerHTML = "<span class='text-success'>4 criteria rated</span>";
       } else {
           proceedBtn.disabled = true;
-          proceedBtn.className = "px-5 py-2 rounded-lg flex items-center gap-2 transition-all font-medium text-sm bg-gray-200 text-gray-500 cursor-not-allowed";
+          proceedBtn.className = "proceed-btn is-disabled";
 
-          completionMessage.innerHTML = `<span class="font-semibold"><span id="answeredCount">${Math.min(answeredActiveCount, 4)}</span> of 4</span> criteria rated`;
+          completionMessage.innerHTML = `<span class="text-strong"><span id="answeredCount">${Math.min(answeredActiveCount, 4)}</span> of 4</span> criteria rated`;
       }
   }
 </script>

@@ -97,6 +97,24 @@
             color: white !important;
         }
 
+        .sidebar-toggle-btn {
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.65rem;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
         .dropdown-menu {
             border: none;
             border-radius: 12px;
@@ -214,6 +232,98 @@
             margin-right: 0.5rem;
         }
 
+        .admin-shell {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        .admin-sidebar {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            position: sticky;
+            top: 1.25rem;
+            overflow: hidden;
+        }
+
+        .admin-sidebar-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            color: #fff;
+            padding: 1rem 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .admin-sidebar-links {
+            padding: 0.75rem;
+        }
+
+        .admin-sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            text-decoration: none;
+            color: #334155;
+            padding: 0.7rem 0.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .admin-sidebar-link i {
+            width: 18px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .admin-sidebar-link:hover {
+            background: #eef2ff;
+            color: #3730a3;
+        }
+
+        .admin-sidebar-link.active {
+            background: #e0e7ff;
+            color: #312e81;
+        }
+
+        .admin-sidebar-link.active i {
+            color: #312e81;
+        }
+
+        .admin-content {
+            min-width: 0;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+        }
+
+        #app.sidebar-collapsed .admin-shell {
+            grid-template-columns: 86px minmax(0, 1fr);
+        }
+
+        #app.sidebar-collapsed .admin-sidebar-header,
+        #app.sidebar-collapsed .admin-sidebar-link span {
+            display: none;
+        }
+
+        #app.sidebar-collapsed .admin-sidebar-links {
+            padding: 0.6rem;
+        }
+
+        #app.sidebar-collapsed .admin-sidebar-link {
+            justify-content: center;
+            padding: 0.72rem 0.5rem;
+        }
+
+        #app.sidebar-collapsed .admin-sidebar-link i {
+            margin: 0;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .navbar-brand {
@@ -222,6 +332,51 @@
 
             .nav-link {
                 margin: 0.25rem 0;
+            }
+
+            .admin-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                position: fixed;
+                top: 88px;
+                left: 0;
+                bottom: 0;
+                width: 280px;
+                border-radius: 0 16px 16px 0;
+                z-index: 1090;
+                transform: translateX(-105%);
+                transition: transform 0.25s ease;
+            }
+
+            #app.sidebar-open .admin-sidebar {
+                transform: translateX(0);
+            }
+
+            .sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.35);
+                z-index: 1085;
+            }
+
+            #app.sidebar-open .sidebar-backdrop {
+                display: block;
+            }
+
+            #app.sidebar-collapsed .admin-shell {
+                grid-template-columns: 1fr;
+            }
+
+            #app.sidebar-collapsed .admin-sidebar-header,
+            #app.sidebar-collapsed .admin-sidebar-link span {
+                display: initial;
+            }
+
+            #app.sidebar-collapsed .admin-sidebar-link {
+                justify-content: flex-start;
+                padding: 0.7rem 0.8rem;
             }
         }
 
@@ -242,23 +397,6 @@
             }
         }
 
-        /* Footer */
-        .footer {
-            background: var(--dark-bg);
-            color: rgba(255, 255, 255, 0.7);
-            padding: 2rem 0;
-            margin-top: 4rem;
-        }
-
-        .footer a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer a:hover {
-            color: white;
-        }
     </style>
 
     @stack('styles')
@@ -269,6 +407,11 @@
         <!-- Modern Navbar -->
         <nav class="navbar navbar-modern navbar-expand-lg navbar-dark">
             <div class="container">
+                <button type="button" class="btn sidebar-toggle-btn" id="sidebarToggle"
+                    aria-label="Toggle sidebar" aria-expanded="true">
+                    <i class="bi bi-list"></i>
+                </button>
+
                 <a class="navbar-brand" href="{{ route('super-admin.dashboard') }}">
                     {{ config('app.name', 'MERS') }}
                 </a>
@@ -414,71 +557,94 @@
                 </div>
                 @yield('content')
             @else
-                <div class="container">
-                    <!-- Flash Messages -->
-                    @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            <strong>Success!</strong> {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @if (session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Error!</strong> {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @if (session('info'))
-                        <div class="alert alert-info alert-dismissible fade show" role="alert">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Info!</strong> {{ session('info') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @if (session('warning'))
-                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-circle-fill me-2"></i>
-                            <strong>Warning!</strong> {{ session('warning') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                aria-label="Close"></button>
-                        </div>
-                    @endif
-                    @yield('content')
-                </div>
-            @endif
-        </main>
-
-        <!-- Footer (hidden in fullpage mode) -->
-        @if (!View::hasSection('fullpage'))
-            <footer class="footer">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5 class="text-white mb-3">
-                                <i class="bi bi-geo-alt-fill me-2"></i>
-                                {{ config('app.name', 'MERS') }}
-                            </h5>
-                            <p class="mb-0">Malaysia Ecotourism Recommenndation System</p>
-                            <small class="text-muted">© {{ date('Y') }} All rights reserved.</small>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <h6 class="text-white mb-3">Quick Links</h6>
-                            <div class="d-flex flex-column flex-md-row justify-content-md-end gap-3">
-                                <a href="#">About</a>
-                                <a href="#">Contact</a>
-                                <a href="#">Privacy Policy</a>
-                                <a href="#">Terms of Service</a>
+                <div class="container-fluid px-3 px-lg-4">
+                    <div class="admin-shell">
+                        <aside class="admin-sidebar">
+                            <div class="admin-sidebar-header">
+                                Super Admin Menu
                             </div>
+                            <nav class="admin-sidebar-links" aria-label="Super Admin Sidebar">
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.dashboard') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.dashboard') }}">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.locations.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.locations.index') }}">
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Manage Location</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.tourist_spots.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.tourist_spots.index') }}">
+                                    <i class="bi bi-camera-fill"></i>
+                                    <span>Manage Tourist Spot</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.criteria_types.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.criteria_types.index') }}">
+                                    <i class="bi bi-ui-checks-grid"></i>
+                                    <span>Manage Criteria Type</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.criteria.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.criteria.index') }}">
+                                    <i class="bi bi-sliders"></i>
+                                    <span>Manage Criteria</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.submissions.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.submissions.index') }}">
+                                    <i class="bi bi-inbox-fill"></i>
+                                    <span>View Submission</span>
+                                </a>
+                                <a class="admin-sidebar-link {{ request()->routeIs('super-admin.sus_submissions.*') ? 'active' : '' }}"
+                                    href="{{ route('super-admin.sus_submissions.index') }}">
+                                    <i class="bi bi-clipboard2-pulse"></i>
+                                    <span>View SUS Submission</span>
+                                </a>
+                            </nav>
+                        </aside>
+
+                        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+                        <div class="admin-content">
+                            <!-- Flash Messages -->
+                            @if (session('success'))
+                                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                    <strong>Success!</strong> {{ session('success') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
+                            @if (session('error'))
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>Error!</strong> {{ session('error') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
+                            @if (session('info'))
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    <strong>Info!</strong> {{ session('info') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
+                            @if (session('warning'))
+                                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+                                    <strong>Warning!</strong> {{ session('warning') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                        aria-label="Close"></button>
+                                </div>
+                            @endif
+                            @yield('content')
                         </div>
                     </div>
                 </div>
-            </footer>
-        @endif
+            @endif
+        </main>
+@include('layouts.partials.footer')
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
@@ -488,6 +654,10 @@
     <script>
         // Auto-dismiss alerts after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
+            const appRoot = document.getElementById('app');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
             const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
             alerts.forEach(function(alert) {
                 setTimeout(function() {
@@ -520,6 +690,34 @@
                         '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Importing...';
                 });
             });
+
+            if (appRoot && sidebarToggle) {
+                const desktopMedia = window.matchMedia('(min-width: 769px)');
+                const savedSidebarState = localStorage.getItem('superAdminSidebarCollapsed');
+
+                if (savedSidebarState === 'true' && desktopMedia.matches) {
+                    appRoot.classList.add('sidebar-collapsed');
+                    sidebarToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                sidebarToggle.addEventListener('click', function() {
+                    if (desktopMedia.matches) {
+                        const collapsed = appRoot.classList.toggle('sidebar-collapsed');
+                        localStorage.setItem('superAdminSidebarCollapsed', collapsed ? 'true' : 'false');
+                        sidebarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                    } else {
+                        const opened = appRoot.classList.toggle('sidebar-open');
+                        sidebarToggle.setAttribute('aria-expanded', opened ? 'true' : 'false');
+                    }
+                });
+
+                if (sidebarBackdrop) {
+                    sidebarBackdrop.addEventListener('click', function() {
+                        appRoot.classList.remove('sidebar-open');
+                        sidebarToggle.setAttribute('aria-expanded', 'false');
+                    });
+                }
+            }
         });
     </script>
 

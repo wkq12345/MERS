@@ -11,9 +11,15 @@ class ViewTouristSpot extends Controller
 {
     public function index(Request $request)
     {
-        $reviewCriteriaId = Criteria::query()
-            ->where('name', 'C7')
-            ->value('id');
+        // Use criteria_id = 7 for displayed rating; fallback by name for compatibility.
+        $reviewCriteriaId = 7;
+        $criteriaExists = Criteria::query()->whereKey($reviewCriteriaId)->exists();
+
+        if (! $criteriaExists) {
+            $reviewCriteriaId = Criteria::query()
+                ->whereIn('name', ['C7', 'Rating'])
+                ->value('id');
+        }
 
         $touristSpots = TouristSpot::with([
             'location:id,name',

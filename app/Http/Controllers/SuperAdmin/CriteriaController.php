@@ -11,7 +11,7 @@ class CriteriaController extends Controller
 {
     public function index()
     {
-        $criteria = Criteria::orderBy('name')->paginate(15);
+        $criteria = Criteria::with('criteriaType')->orderBy('name')->paginate(15);
         return view('SuperAdmin.criteria.index', compact('criteria'));
     }
     public function create()
