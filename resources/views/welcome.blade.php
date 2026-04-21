@@ -1,7 +1,5 @@
 @extends('layouts.welcome')
-
 @section('title', 'Welcome to MERS')
-
 @section('fullpage', true)
 
 
@@ -156,9 +154,8 @@
             </div>
         </div>
     </div>
+
 </section>
-
-
 @endsection
 
 @push('scripts')

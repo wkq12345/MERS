@@ -96,6 +96,7 @@
             <form method="POST" action="{{ route('recommendations.calculate') }}" id="kanoForm">
                 @csrf
                 <input type="hidden" name="weighting_method" value="kano">
+                <input type="hidden" name="selected_criteria" id="selected-criteria" value="[]">
                 @foreach ($cards as $card)
                     <!-- Main Card Border match theme color -->
                     <div class="card mb-5 bg-white shadow-sm kano-question-card d-none" data-criteria-id="{{ $card['id'] }}"
@@ -202,45 +203,17 @@
         </div>
     </div>
 
-    <!-- Criteria Selection Modal -->
-    <div class="modal fade" id="criteriaModal" tabindex="-1" aria-labelledby="criteriaModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
-          <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
-            <div>
-                <h4 class="modal-title fw-bold text-dark" id="criteriaModalLabel">Select 4 Criteria</h4>
-                <p class="text-muted small mb-0 mt-1">Choose exactly four criteria you want to rate.</p>
-            </div>
-            <button type="button" class="btn-close" onclick="closeCriteriaModal()"></button>
-          </div>
-          <div class="modal-body p-4 bg-light mt-3" style="border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
-            <div class="row g-3">
-              @foreach($criteriaTypes as $type)
-                @foreach($type->criteria as $criterion)
-                  <div class="col-md-6">
-                    <label class="d-flex align-items-start p-3 bg-white border rounded shadow-sm cursor-pointer h-100" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#8b5cf6'" onmouseout="this.style.borderColor='#dee2e6'">
-                      <input type="checkbox" name="modal_criteria" value="{{ $criterion->id }}" class="form-check-input mt-1 me-3 criteria-checkbox">
-                      <div>
-                        <span class="fw-bold text-dark d-block">{{ $criterion->name }}</span>
-                        <span class="text-muted" style="font-size: 0.8rem;">{{ $criterion->description ?? 'Description for this criteria.' }}</span>
-                      </div>
-                    </label>
-                  </div>
-                @endforeach
-              @endforeach
-            </div>
-          </div>
-          <div class="modal-footer border-top-0 px-4 py-3 d-flex justify-content-between align-items-center bg-white" style="border-radius: 0 0 1rem 1rem;">
-            <span class="text-muted fw-medium small">
-              Selected: <span id="modalSelectedCount" class="fw-bold fs-5" style="color: #8b5cf6;">0</span> / 4
-            </span>
-            <button class="btn px-4 py-2 text-white fw-bold shadow-sm" id="modalConfirmBtn" onclick="confirmCriteriaSelection()" disabled style="background-color: #8b5cf6; border: none; border-radius: 0.5rem; transition: background-color 0.2s;">
-              Confirm Selection
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        @include('recommendations.partials.criteria-selection-modal', [
+                'modalId' => 'criteriaModal',
+                'modalLabelId' => 'criteriaModalLabel',
+                'title' => 'Select 4 Criteria',
+                'subtitle' => 'Choose exactly four criteria you want to rate.',
+                'confirmText' => 'Confirm Selection',
+                'confirmColor' => '#8b5cf6',
+                'hoverBorderColor' => '#8b5cf6',
+                'selectedCountColor' => '#8b5cf6',
+                'maxSelection' => 4,
+        ])
 
     @push('scripts')
         <script>
@@ -278,7 +251,10 @@
                     answers[id] = { F: null, D: null };
                 });
 
-                let activeCriteria = new Set([]);
+                const requiredCriteriaCount = 4;
+                const selectionStorageKey = 'recommendations_selected_criteria';
+                const selectedCriteriaInput = document.getElementById('selected-criteria');
+                let activeCriteria = new Set(loadSavedCriteria());
                 let criteriaModalInstance = new bootstrap.Modal(document.getElementById('criteriaModal'));
 
                 const radios = document.querySelectorAll('.kano-radio');
@@ -287,13 +263,39 @@
                 const progressPercent = document.getElementById('progress-percent');
                 const proceedBtn = document.getElementById('proceed-btn');
 
+                function loadSavedCriteria() {
+                    try {
+                        const raw = localStorage.getItem(selectionStorageKey);
+                        if (!raw) return [];
+
+                        const parsed = JSON.parse(raw);
+                        if (!Array.isArray(parsed)) return [];
+
+                        const validIds = new Set(criteriaIds.map(String));
+                        return parsed
+                            .map(String)
+                            .filter(id => validIds.has(id))
+                            .slice(0, requiredCriteriaCount);
+                    } catch (error) {
+                        return [];
+                    }
+                }
+
+                function saveActiveCriteria() {
+                    const selected = Array.from(activeCriteria).slice(0, requiredCriteriaCount);
+                    localStorage.setItem(selectionStorageKey, JSON.stringify(selected));
+                    if (selectedCriteriaInput) {
+                        selectedCriteriaInput.value = JSON.stringify(selected);
+                    }
+                }
+
                 // Criteria Modal Logic
                 document.querySelectorAll('.criteria-checkbox').forEach(cb => {
                     cb.addEventListener('change', () => {
                         const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
-                        if (checked > 4) {
+                        if (checked > requiredCriteriaCount) {
                             cb.checked = false;
-                            alert("You can only select up to 4 criteria.");
+                            alert("You can only select up to " + requiredCriteriaCount + " criteria.");
                             return;
                         }
                         updateModalBtnState();
@@ -314,10 +316,11 @@
 
                 window.confirmCriteriaSelection = function() {
                     const checked = document.querySelectorAll('.criteria-checkbox:checked');
-                    if (checked.length !== 4) return;
+                    if (checked.length !== requiredCriteriaCount) return;
 
                     activeCriteria.clear();
                     checked.forEach(cb => activeCriteria.add(cb.value));
+                    saveActiveCriteria();
 
                     showActiveCriteriaCards();
                     criteriaModalInstance.hide();
@@ -328,7 +331,7 @@
                 window.updateModalBtnState = function() {
                     const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
                     document.getElementById('modalSelectedCount').innerText = checked;
-                    document.getElementById('modalConfirmBtn').disabled = (checked !== 4);
+                    document.getElementById('modalConfirmBtn').disabled = (checked !== requiredCriteriaCount);
                 }
 
                 function showActiveCriteriaCards() {
@@ -352,9 +355,15 @@
                     });
                 }
 
-                // Initial show modal if no criteria
-                if (activeCriteria.size < 4) {
+                saveActiveCriteria();
+
+                // Initial show modal if no full selection
+                if (activeCriteria.size < requiredCriteriaCount) {
                     criteriaModalInstance.show();
+                } else {
+                    showActiveCriteriaCards();
+                    updateProgress();
+                    calculateScores();
                 }
 
                 radios.forEach(radio => {

@@ -622,7 +622,7 @@
   <div class="drm-shell">
   <div class="drm-header">
       <div>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
                             <i class="bi bi-arrow-left me-1"></i>Back
                         </button>
     <h2 class="drm-title">Direct Rating Method</h2>
@@ -644,6 +644,7 @@
     <form action="{{ route('recommendations.calculate') }}" method="POST" id="ratingForm">
       @csrf
     <input type="hidden" name="weighting_method" value="drm">
+    <input type="hidden" name="selected_criteria" id="selected-criteria" value="[]">
       <div class="criteria-list">
         @foreach($criteriaTypes as $type)
           @foreach($type->criteria as $criterion)
@@ -761,85 +762,91 @@
   </div>
 </div>
 
-<!-- Criteria Selection Modal -->
-<div id="criteriaModal" class="criteria-modal hidden">
-  <div class="criteria-modal-panel" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <h3 class="modal-title">Select 4 Criteria</h3>
-        <p class="modal-subtitle">Choose exactly four criteria you want to rate.</p>
-      </div>
-      <button onclick="closeCriteriaModal()" class="modal-close-btn">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <div class="modal-body">
-      <div class="criteria-grid">
-        @foreach($criteriaTypes as $type)
-          @foreach($type->criteria as $criterion)
-            <label class="criteria-option">
-              <input type="checkbox" name="modal_criteria" value="{{ $criterion->id }}" class="criteria-checkbox">
-              <div>
-                <span class="criteria-option-name">{{ $criterion->name }}</span>
-                <span class="criteria-option-desc">{{ $criterion->description }}</span>
-              </div>
-            </label>
-          @endforeach
-        @endforeach
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <p class="modal-count">
-        Selected: <span id="modalSelectedCount" class="modal-count-value">0</span> / 4
-      </p>
-      <button id="modalConfirmBtn" onclick="confirmCriteriaSelection()" class="modal-confirm-btn" disabled>
-        Confirm Selection
-      </button>
-    </div>
-  </div>
-</div>
+@include('recommendations.partials.criteria-selection-modal', [
+    'modalId' => 'criteriaModal',
+    'modalLabelId' => 'criteriaModalLabel',
+    'title' => 'Select 4 Criteria',
+    'subtitle' => 'Choose exactly four criteria you want to rate.',
+    'confirmText' => 'Confirm Selection',
+    'confirmColor' => '#7c3aed',
+    'hoverBorderColor' => '#c084fc',
+    'selectedCountColor' => '#9333ea',
+    'maxSelection' => 4,
+])
 
 <script>
   const requiredQuestions = 4;
-  let activeCriteria = new Set([
+  const selectionStorageKey = 'recommendations_selected_criteria';
+  const selectedCriteriaInput = document.getElementById('selected-criteria');
+  let criteriaModalInstance = null;
+  const initialActiveCriteria = [
       @foreach($userWeights as $id => $weight)
           @if($weight > 0)
           '{{ $id }}',
           @endif
       @endforeach
-  ]);
-  const answeredSet = new Set([...activeCriteria]);
+  ];
+  let activeCriteria = new Set(loadSavedCriteria());
+  const answeredSet = new Set();
+
+  function loadSavedCriteria() {
+    try {
+      const raw = localStorage.getItem(selectionStorageKey);
+      if (!raw) return initialActiveCriteria;
+
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return initialActiveCriteria;
+
+      const validIds = new Set(Array.from(document.querySelectorAll('.criteria-card')).map(card => card.getAttribute('data-criteria-id')));
+      return parsed
+        .map(String)
+        .filter(id => validIds.has(id))
+        .slice(0, requiredQuestions);
+    } catch (error) {
+      return initialActiveCriteria;
+    }
+  }
+
+  function saveActiveCriteria() {
+    const selected = Array.from(activeCriteria).slice(0, requiredQuestions);
+    localStorage.setItem(selectionStorageKey, JSON.stringify(selected));
+    if (selectedCriteriaInput) {
+      selectedCriteriaInput.value = JSON.stringify(selected);
+    }
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
+    criteriaModalInstance = new bootstrap.Modal(document.getElementById('criteriaModal'));
+
       // Check checkboxes dynamically
       document.querySelectorAll('.criteria-checkbox').forEach(cb => {
           cb.addEventListener('change',() => {
               const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
-              if (checked > 4) {
+        if (checked > requiredQuestions) {
                  cb.checked = false;
-                 alert("You can only select up to 4 criteria.");
+         alert("You can only select up to " + requiredQuestions + " criteria.");
                  return;
               }
               updateModalBtnState();
           });
       });
 
+          activeCriteria.forEach(id => {
+            const input = document.getElementById('input_' + id);
+            if (input && parseInt(input.value, 10) > 0) {
+              answeredSet.add(id.toString());
+            }
+          });
+
+    saveActiveCriteria();
+
       // Show modal initially if no active criteria
-      if(activeCriteria.size < 4) {
+    if(activeCriteria.size < requiredQuestions) {
           openCriteriaModal();
       } else {
           showActiveCriteriaCards();
           updateProgress();
       }
-
-      // Allow closing by clicking outside the modal
-      document.getElementById('criteriaModal').addEventListener('click', (e) => {
-          if (e.target === document.getElementById('criteriaModal') && activeCriteria.size === 4) {
-              closeCriteriaModal();
-          }
-      });
   });
 
   function openCriteriaModal() {
@@ -848,28 +855,29 @@
           cb.checked = activeCriteria.has(cb.value);
       });
       updateModalBtnState();
-      document.getElementById('criteriaModal').classList.remove('hidden');
+      criteriaModalInstance.show();
   }
 
   function closeCriteriaModal() {
-      document.getElementById('criteriaModal').classList.add('hidden');
+      criteriaModalInstance.hide();
   }
 
   function updateModalBtnState() {
       const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
       document.getElementById('modalSelectedCount').innerText = checked;
-      document.getElementById('modalConfirmBtn').disabled = (checked !== 4);
+      document.getElementById('modalConfirmBtn').disabled = (checked !== requiredQuestions);
   }
 
   function confirmCriteriaSelection() {
       const checked = document.querySelectorAll('.criteria-checkbox:checked');
-      if (checked.length !== 4) return;
+      if (checked.length !== requiredQuestions) return;
 
       activeCriteria.clear();
       checked.forEach(cb => activeCriteria.add(cb.value));
+      saveActiveCriteria();
 
       showActiveCriteriaCards();
-      document.getElementById('criteriaModal').classList.add('hidden');
+      criteriaModalInstance.hide();
       updateProgress();
   }
 

@@ -228,6 +228,7 @@
                 <form method="POST" action="{{ route('recommendations.calculate') }}" id="hdm-form" class="m-0 d-flex gap-3">
                     @csrf
                     <input type="hidden" name="weighting_method" value="hdm">
+                    <input type="hidden" name="selected_criteria" id="selected-criteria" value="[]">
                     @foreach($criteriaCards as $card)
                         <input type="hidden" name="score_{{ $card['id'] }}" id="input-{{ $card['id'] }}" value="0">
                     @endforeach
@@ -241,45 +242,17 @@
     </div>
 </div>
 
-<!-- Criteria Selection Modal -->
-<div class="modal fade" id="criteriaModal" tabindex="-1" aria-labelledby="criteriaModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
-      <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
-        <div>
-            <h4 class="modal-title fw-bold text-dark" id="criteriaModalLabel">Select 4 Criteria</h4>
-            <p class="text-muted small mb-0 mt-1">Choose exactly four criteria you want to allocate budget to.</p>
-        </div>
-        <button type="button" class="btn-close" onclick="closeCriteriaModal()"></button>
-      </div>
-      <div class="modal-body p-4 bg-light mt-3" style="border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
-        <div class="row g-3">
-          @foreach($criteriaTypes as $type)
-            @foreach($type->criteria as $criterion)
-              <div class="col-md-6">
-                <label class="d-flex align-items-start p-3 bg-white border rounded shadow-sm cursor-pointer h-100" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#0d6efd'" onmouseout="this.style.borderColor='#dee2e6'">
-                  <input type="checkbox" name="modal_criteria" value="{{ $criterion->id }}" class="form-check-input mt-1 me-3 criteria-checkbox">
-                  <div>
-                    <span class="fw-bold text-dark d-block">{{ $criterion->name }}</span>
-                    <span class="text-muted" style="font-size: 0.8rem;">{{ $criterion->description ?? 'Description for this criteria.' }}</span>
-                  </div>
-                </label>
-              </div>
-            @endforeach
-          @endforeach
-        </div>
-      </div>
-      <div class="modal-footer border-top-0 px-4 py-3 d-flex justify-content-between align-items-center bg-white" style="border-radius: 0 0 1rem 1rem;">
-        <span class="text-muted fw-medium small">
-          Selected: <span id="modalSelectedCount" class="fw-bold fs-5" style="color: #0d6efd;">0</span> / 4
-        </span>
-        <button class="btn btn-primary px-4 py-2 text-white fw-bold shadow-sm" id="modalConfirmBtn" onclick="confirmCriteriaSelection()" disabled style="border-radius: 0.5rem;">
-          Confirm Selection
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+@include('recommendations.partials.criteria-selection-modal', [
+        'modalId' => 'criteriaModal',
+        'modalLabelId' => 'criteriaModalLabel',
+        'title' => 'Select 4 Criteria',
+        'subtitle' => 'Choose exactly four criteria you want to allocate budget to.',
+        'confirmText' => 'Confirm Selection',
+        'confirmColor' => '#0d6efd',
+        'hoverBorderColor' => '#0d6efd',
+        'selectedCountColor' => '#0d6efd',
+        'maxSelection' => 4,
+])
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -311,16 +284,56 @@
             colors[c.id] = c.color;
         });
 
-        let activeCriteria = new Set([]);
+        const requiredCriteriaCount = 4;
+        const selectionStorageKey = 'recommendations_selected_criteria';
+        const selectedCriteriaInput = document.getElementById('selected-criteria');
+        let activeCriteria = new Set(loadSavedCriteria());
         let criteriaModalInstance = new bootstrap.Modal(document.getElementById('criteriaModal'));
+
+        function loadSavedCriteria() {
+            try {
+                const raw = localStorage.getItem(selectionStorageKey);
+                if (!raw) return [];
+
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) return [];
+
+                const validIds = new Set(criteriaCardsData.map(c => String(c.id)));
+                return parsed
+                    .map(String)
+                    .filter(id => validIds.has(id))
+                    .slice(0, requiredCriteriaCount);
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function saveActiveCriteria() {
+            const selected = Array.from(activeCriteria).slice(0, requiredCriteriaCount);
+            localStorage.setItem(selectionStorageKey, JSON.stringify(selected));
+            if (selectedCriteriaInput) {
+                selectedCriteriaInput.value = JSON.stringify(selected);
+            }
+        }
+
+        function showActiveCriteriaCards() {
+            document.querySelectorAll('.criterion-card').forEach(card => {
+                if (activeCriteria.has(card.dataset.criterion)) {
+                    card.classList.remove('d-none');
+                } else {
+                    card.classList.add('d-none');
+                    allocations[card.dataset.criterion] = 0;
+                }
+            });
+        }
 
         // Modal logic
         document.querySelectorAll('.criteria-checkbox').forEach(cb => {
             cb.addEventListener('change', () => {
                 const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
-                if (checked > 4) {
+                if (checked > requiredCriteriaCount) {
                     cb.checked = false;
-                    alert("You can only select up to 4 criteria.");
+                    alert("You can only select up to " + requiredCriteriaCount + " criteria.");
                     return;
                 }
                 updateModalBtnState();
@@ -330,7 +343,7 @@
         function updateModalBtnState() {
             const count = document.querySelectorAll('.criteria-checkbox:checked').length;
             document.getElementById('modalSelectedCount').innerText = count;
-            document.getElementById('modalConfirmBtn').disabled = (count !== 4);
+            document.getElementById('modalConfirmBtn').disabled = (count !== requiredCriteriaCount);
         }
 
         window.openCriteriaModal = function() {
@@ -347,21 +360,13 @@
 
         window.confirmCriteriaSelection = function() {
             const checked = document.querySelectorAll('.criteria-checkbox:checked');
-            if (checked.length !== 4) return;
+            if (checked.length !== requiredCriteriaCount) return;
 
             activeCriteria.clear();
             checked.forEach(cb => activeCriteria.add(cb.value));
+            saveActiveCriteria();
 
-            // Hide all cards, show active ones
-            document.querySelectorAll('.criterion-card').forEach(card => {
-                if (activeCriteria.has(card.dataset.criterion)) {
-                    card.classList.remove('d-none');
-                } else {
-                    card.classList.add('d-none');
-                    // Reset hidden ones to 0
-                    allocations[card.dataset.criterion] = 0;
-                }
-            });
+            showActiveCriteriaCards();
 
             updateUI();
             criteriaModalInstance.hide();
@@ -531,8 +536,11 @@
             });
         });
 
+        saveActiveCriteria();
+        showActiveCriteriaCards();
+
         // Initialize UI
-        if (activeCriteria.size === 0) {
+        if (activeCriteria.size < requiredCriteriaCount) {
             criteriaModalInstance.show();
         }
         updateUI();
