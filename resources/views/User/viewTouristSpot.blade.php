@@ -154,7 +154,12 @@
 
                 {{-- Search Header --}}
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="h3 fw-bold mb-0">Explore Tourist Spots</h2>
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+                        <h2 class="h3 fw-bold mb-0">Explore Tourist Spots</h2>
+                    </div>
                     <div class="input-group" style="max-width: 300px;">
                         <span class="input-group-text bg-white border-end-0">
                             <i class="bi bi-search text-muted"></i>

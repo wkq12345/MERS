@@ -171,22 +171,18 @@ class RecommendationController extends Controller
 
     public function showResults(Request $request)
     {
-        $methodId = (int) $request->session()->get('resultDataRunId');
-
-        if (!$methodId) {
-            return redirect()->route('recommendations.drm')
-                ->with('error', 'No recent calculation found. Please run the process again.');
-        }
-
         $actor = $this->resolveActorContext($request);
-        $run = RecommendationRun::query()
-            ->where('weighting_method_id', $methodId)
-            ->latest()
-            ->first();
+        $userId = $actor['user_id'];
+        $guestKey = $actor['guest_key'];
+
+        // Fetch the most recent RecommendationRun regardless of session data
+        $runQuery = RecommendationRun::query()->latest();
+        $this->applyActorScope($runQuery, $userId, $guestKey);
+        $run = $runQuery->first();
 
         if (!$run) {
             return redirect()->route('recommendations.drm')
-                ->with('error', 'Calculation result not found.');
+                ->with('error', 'No recent calculation found. Please run the process again.');
         }
 
         // Fetch fresh data from DB for display

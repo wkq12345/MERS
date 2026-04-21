@@ -24,6 +24,9 @@
     @endphp
     <div class="tw-min-h-screen tw-bg-gray-50">
         <div class="tw-max-w-7xl tw-mx-auto tw-px-6 tw-py-8">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
             <div class="tw-mb-6 tw-flex tw-flex-col md:tw-flex-row md:tw-items-center md:tw-justify-between tw-gap-3">
                 @if (session('success'))
                     <div class="tw-w-full tw-mb-2 tw-px-4 tw-py-3 tw-bg-green-50 tw-border tw-border-green-200 tw-text-green-800 tw-rounded-lg tw-text-sm tw-flex tw-items-center tw-gap-2">
@@ -37,6 +40,7 @@
                         {{ session('error') }}
                     </div>
                 @endif
+
                 <div>
                     <h2 class="tw-text-3xl tw-text-gray-900 tw-font-semibold tw-mb-1">Method Comparison</h2>
                     <p class="tw-text-gray-600">Side-by-side ranking comparison across DRM, HDM, and Kano for the same criteria set.</p>

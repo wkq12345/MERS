@@ -138,7 +138,10 @@
     @endphp
 
     <div id="tw-root" x-data="rankingData()" x-init="init()" class="tw-min-h-screen tw-bg-gray-50">
-        <div class="tw-max-w-7xl tw-mx-auto tw-px-6 tw-py-8">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+        <div class="tw-max-w-7xl tw-mx-auto tw-px-6 tw-py-8 ">
             <div class="tw-mb-8">
                 <h2 class="tw-text-3xl tw-mb-2 tw-text-gray-900 tw-font-semibold">Ranked Tourist Spots</h2>
                 <p class="tw-text-gray-600">Based on your preferences, here are the top recommended ecotourism destinations</p>
@@ -211,7 +214,7 @@
                             </a>
                         </div>
 
-                        <div class="tw-bg-gradient-to-br tw-from-indigo-500 tw-to-purple-600 tw-rounded-xl tw-p-1 tw-shadow-lg">
+                        <div class="tw-bg-white tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-200">
                             <div class="tw-bg-white tw-rounded-lg tw-p-5">
                                 <button type="button"
                                     class="tw-w-full tw-flex tw-items-center tw-justify-between tw-text-left tw-border-none tw-outline-none tw-p-0 focus:tw-outline-none"
@@ -241,19 +244,6 @@
                                                 <span>{{ $status['name'] }}</span>
                                                 <span class="tw-text-xs tw-font-semibold">Completed</span>
                                             </div>
-
-                                            <form id="clear-form-{{ $methodCode }}" method="POST"
-                                                action="{{ route('recommendations.clear_method') }}">
-                                                @csrf
-                                                <input type="hidden" name="method_code" value="{{ $methodCode }}">
-                                                <input type="hidden" name="criteria_signature"
-                                                    value="{{ $criteriaSignature ?? '' }}">
-                                                <button type="button" data-clear-form="clear-form-{{ $methodCode }}"
-                                                    data-method-name="{{ $status['name'] }}"
-                                                    class="clear-method-btn tw-w-full tw-px-4 tw-py-2 tw-bg-white tw-border tw-border-indigo-300 tw-text-indigo-700 tw-rounded-lg hover:tw-bg-indigo-50 tw-transition-colors">
-                                                    {{ $isCurrentMethod ? 'Clear and Redo This Method' : 'Clear and Enable This Method' }}
-                                                </button>
-                                            </form>
                                         @endif
                                     @endforeach
                                 </div>
@@ -420,8 +410,8 @@
                     rankedSpots: @json($rankedSpots),
                     locations: @json($locations),
                     selectedLocation: 'All Locations',
-                    showFilters: true,
-                    showMethods: true,
+                    showFilters: false,
+                    showMethods: false,
                     selectedFavorite: {{ $selectedFavorite ?? 'null' }},
                     isSaving: false,
                     currentMethod: '{{ $currentMethodCode ?? '' }}',

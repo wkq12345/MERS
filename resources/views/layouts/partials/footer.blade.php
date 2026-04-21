@@ -1,14 +1,14 @@
 <style>
 /* Footer */
         .footer {
-            background: var(--dark-bg);
-            color: rgba(255, 255, 255, 0.7);
+            background: black;
+            color: rgba(246, 246, 246, 0.7);
             padding: 2rem 0;
             margin-top: 4rem;
         }
 
         .footer a {
-            color: rgba(255, 255, 255, 0.7);
+            color: white;
             text-decoration: none;
             transition: color 0.3s ease;
         }
@@ -34,10 +34,9 @@
                         <div class="col-md-6 text-md-end">
                             <h6 class="text-white mb-3">Quick Links</h6>
                             <div class="d-flex flex-column flex-md-row justify-content-md-end gap-3">
-                                <a href="#">About</a>
-                                <a href="#">Contact</a>
-                                <a href="#">Privacy Policy</a>
-                                <a href="#">Terms of Service</a>
+                                <a href="{{ route('welcome') }}">Home</a>
+                                <a href="{{ route('login') }}">Login</a>
+
                             </div>
                         </div>
                     </div>

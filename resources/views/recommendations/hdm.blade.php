@@ -111,6 +111,9 @@
 
 <div class="py-5">
     <div class="container" style="max-width: 900px;">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1 class="display-5 fw-bold text-dark mb-2">Hundred Dollar Method</h1>

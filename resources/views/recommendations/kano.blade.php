@@ -59,6 +59,9 @@
 
     <div class="row justify-content-center kano-container mt-4">
         <div class="col-lg-10">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="mb-2 text-start fw-bold text-dark">Kano Model Analysis</h2>
