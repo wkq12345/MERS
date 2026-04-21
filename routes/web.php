@@ -40,6 +40,8 @@ Route::post('/admin/logout', [AuthController::class, 'adminLogout'])->name('admi
 
 // Protected Routes
 Route::get('/dashboard', [RecommendationController::class, 'dashboard'])->name('user.dashboard');
+Route::post('/user-demographic', [\App\Http\Controllers\UserDemographicController::class, 'store'])
+    ->name('user.demographic.store');
 
 // user view tourist spot
 Route::get('/viewTouristSpot', [\App\Http\Controllers\ViewTouristSpot::class, 'index'])->name('viewTouristSpot');
@@ -103,6 +105,7 @@ Route::get('/recommendations/previous', [RecommendationController::class, 'showP
 Route::get('/sus', [RecommendationController::class, 'susPage'])->name('recommendations.sus.index');
 Route::post('/recommendations/sus', [RecommendationController::class, 'submitSystemUsabilityScale'])->name('recommendations.sus.submit');
 Route::get('/recommendations/compare', [RecommendationController::class, 'compareRecommendations'])->name('recommendations.compare');
+Route::get('/recommendations/compare/download', [RecommendationController::class, 'downloadComparisonCsv'])->name('recommendations.compare.download');
 Route::post('/recommendations/clear-method', [RecommendationController::class, 'clearMethodResult'])->name('recommendations.clear_method');
 Route::post('/recommendations/favorite', [RecommendationController::class, 'saveFavorite'])->name('recommendations.save_favorite');
 Route::post('/recommendations/send-to-admin', [RecommendationController::class, 'sendResultsToAdmin'])->name('recommendations.send_admin');

@@ -30,6 +30,7 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable();
             $table->string('submitter_name', 100)->nullable();
             $table->string('ip_address', 45)->nullable();
+            $table->foreignId('user_demographics_id')->nullable()->constrained('user_demographics')->onDelete('set null');
             $table->index('submitted_to_admin');
             // time tracking fields
             $table->timestamp('started_at')->nullable();

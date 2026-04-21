@@ -9,6 +9,7 @@ class RecommendationRun extends Model
     protected $fillable = [
         'user_id',
         'guest_key',
+        'user_demographics_id',
         'weighting_method_id',
         'criteria_id',
         'criteria_weight',
@@ -54,5 +55,10 @@ class RecommendationRun extends Model
     public function weightingMethod()
     {
         return $this->belongsTo(WeightingMethod::class);
+    }
+
+    public function demographic()
+    {
+        return $this->belongsTo(UserDemographic::class, 'user_demographics_id');
     }
 }

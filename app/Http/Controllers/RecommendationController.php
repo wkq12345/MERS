@@ -9,6 +9,7 @@ use App\Models\TouristSpotCriteriaRating;
 use App\Models\CriteriaType;
 use App\Models\WeightingMethod;
 use App\Models\RecommendationRun;
+use App\Models\UserDemographic;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
@@ -36,14 +37,8 @@ class RecommendationController extends Controller
     public function directRatingMethod(Request $request)
     {
         $this->startMethodTimer($request, 'drm');
-        $criteriaTypes = CriteriaType::with('criteria')->orderBy('name')->get();
-        $userWeights = [];
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if ($userId) {
-            $userWeights = \App\Models\UserCriteriaWeight::where('user_id', $userId)
-                ->pluck('weight', 'criteria_id')
-                ->toArray();
-        }
+        $criteriaTypes = $this->getCriteriaTypes();
+        $userWeights = $this->getUserWeights();
         return view('recommendations.drm', compact('criteriaTypes', 'userWeights'));
     }
 
@@ -93,21 +88,15 @@ class RecommendationController extends Controller
     public function hundredDollarMethod(Request $request)
     {
         $this->startMethodTimer($request, 'hdm');
-        $criteriaTypes = CriteriaType::with('criteria')->orderBy('name')->get();
-        $userWeights = [];
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if ($userId) {
-            $userWeights = \App\Models\UserCriteriaWeight::where('user_id', $userId)
-                ->pluck('weight', 'criteria_id')
-                ->toArray();
-        }
+        $criteriaTypes = $this->getCriteriaTypes();
+        $userWeights = $this->getUserWeights();
         return view('recommendations.hdm', compact('criteriaTypes', 'userWeights'));
     }
 
     public function kanoMethod(Request $request)
     {
         $this->startMethodTimer($request, 'kano');
-        $criteriaTypes = CriteriaType::with('criteria')->orderBy('name')->get();
+        $criteriaTypes = $this->getCriteriaTypes();
         return view('recommendations.kano', compact('criteriaTypes'));
     }
 
@@ -121,269 +110,61 @@ class RecommendationController extends Controller
                     $query->where('is_active', true);
                 }),
             ],
-
         ]);
 
         $weightingMethod = WeightingMethod::where('code', $request->input('weighting_method'))
             ->where('is_active', true)
             ->first();
 
-        /* -----------------------------
-         STEP 1: Load criteria + collect weights from request
-        ------------------------------ */
         $allCriteria = Criteria::with('criteriaType')->get();
         if ($allCriteria->isEmpty()) {
             return back()->with('error', 'No criteria available.');
         }
 
-        // Collect raw weights from the form or fallback to DB if available
-        $weightsRaw = [];
         $actor = $this->resolveActorContext($request);
         $userId = $actor['user_id'];
         $guestKey = $actor['guest_key'];
 
-        foreach ($allCriteria as $criterion) {
-            $field = 'score_' . $criterion->id;
-            if ($request->has($field)) {
-                $val = (float) $request->input($field);
-                if ($val > 0) {
-                    $weightsRaw[$criterion->id] = $val;
-
-                    // Save to user criteria weight table
-                    if ($userId) {
-                        \App\Models\UserCriteriaWeight::updateOrCreate(
-                            ['user_id' => $userId, 'criteria_id' => $criterion->id],
-                            ['weight' => $val]
-                        );
-                    }
-                } else if ($userId) {
-                    \App\Models\UserCriteriaWeight::where('user_id', $userId)
-                        ->where('criteria_id', $criterion->id)
-                        ->delete();
-                }
-            } elseif ($userId) {
-                // If not in request, try to get from DB
-                $dbWeight = \App\Models\UserCriteriaWeight::where('user_id', $userId)
-                    ->where('criteria_id', $criterion->id)
-                    ->first();
-                if ($dbWeight && $dbWeight->weight > 0) {
-                    $weightsRaw[$criterion->id] = $dbWeight->weight;
-                }
-            }
-        }
-
+        $weightsRaw = $this->loadCriteriaWeights($request, $allCriteria, $userId);
         if (empty($weightsRaw)) {
             return back()->with('error', 'Weights not found.');
         }
 
-        // Filter the criteria collection to ONLY include the user's selected criteria
-        $criteria = $allCriteria->filter(function ($c) use ($weightsRaw) {
-            return isset($weightsRaw[$c->id]) && $weightsRaw[$c->id] > 0;
-        })->values();
-
-        $criteriaIds = $criteria->pluck('id')->toArray();
-
-
-
-        /* -----------------------------
-         STEP 2: Active tourist spots
-        ------------------------------ */
+        $criteria = $allCriteria->filter(fn($c) => ($weightsRaw[$c->id] ?? 0) > 0)->values();
         $touristSpots = TouristSpot::with(['location', 'ratings'])
             ->where('status', true)
             ->get();
+
         if ($touristSpots->isEmpty()) {
             return back()->with('error', 'No active tourist spots.');
         }
 
-        /* -----------------------------
-         STEP 4: Decision matrix
-        ------------------------------ */
-        $ratings = TouristSpotCriteriaRating::whereIn('tourist_spot_id', $touristSpots->pluck('id'))
-            ->whereIn('criteria_id', $criteriaIds)
-            ->get();
+        $criteriaIds = $criteria->pluck('id')->toArray();
+        $decisionMatrix = $this->buildDecisionMatrix($touristSpots, $criteria, $criteriaIds);
 
-        $decisionMatrix = [];
-        foreach ($touristSpots as $spot) {
-            foreach ($criteria as $criterion) {
-                $decisionMatrix[$spot->id][$criterion->id] = 0;
-            }
-        }
+        $normalizedMatrix = $this->normalizeMatrix($decisionMatrix, $touristSpots, $criteria);
+        $normalizedWeights = $this->normalizeWeights($weightsRaw, $criteria);
+        $weightedMatrix = $this->buildWeightedMatrix($normalizedMatrix, $normalizedWeights, $touristSpots, $criteria);
 
-        foreach ($ratings as $rating) {
-            $decisionMatrix[$rating->tourist_spot_id][$rating->criteria_id] = $rating->raw_value;
-        }
+        [$idealBest, $idealWorst] = $this->calculateIdealPoints($weightedMatrix, $criteria, $touristSpots);
+        $separations = $this->calculateSeparations($weightedMatrix, $idealBest, $idealWorst, $criteria, $touristSpots);
+        $relativeCloseness = $this->calculateRelativeCloseness($separations, $touristSpots);
 
-        /* -----------------------------
-         STEP 5: Normalize matrix
-         Transforms values like 150km and 4.5 stars into a common 0-1 scale.
-        ------------------------------ */
-        $normalizedMatrix = [];
-
-        foreach ($criteria as $criterion) {
-            // 1. Calculate the Vector Magnitude (Denominator) for this specific criterion
-            $sumSquares = 0;
-            foreach ($touristSpots as $spot) {
-                // Get the raw value (e.g., 100 for distance, 5 for review)
-                $val = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
-                $sumSquares += pow($val, 2);
-            }
-            // Sqrt of sum of squares
-            $denominator = sqrt($sumSquares);
-
-            // 2. Divide every spot's value by this denominator
-            foreach ($touristSpots as $spot) {
-                $originalValue = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
-
-                // Avoid division by zero if all values are 0
-                $normalizedVal = $denominator > 0
-                    ? $originalValue / $denominator
-                    : 0;
-
-                $normalizedMatrix[$spot->id][$criterion->id] = $normalizedVal;
-            }
-        }
-
-        /* -----------------------------
-         STEP 6: Normalize weights
-        ------------------------------ */
-        $totalWeight = array_sum($weightsRaw);
-        $normalizedWeights = [];
-
-        foreach ($criteria as $criterion) {
-            $normalizedWeights[$criterion->id] =
-                $totalWeight > 0
-                ? ($weightsRaw[$criterion->id] ?? 0) / $totalWeight
-                : 1 / count(
-                    $criteria,
-                    4
-                );
-        }
-
-        /* -----------------------------
-         STEP 7: Weighted matrix
-        ------------------------------ */
-        $weightedMatrix = [];
-        foreach ($touristSpots as $spot) {
-            foreach ($criteria as $criterion) {
-                $weightedMatrix[$spot->id][$criterion->id] =
-                    $normalizedMatrix[$spot->id][$criterion->id] *
-                    $normalizedWeights[$criterion->id];
-            }
-        }
-
-        /* -----------------------------
-         STEP 8: Ideal best & worst
-        ------------------------------ */
-        $idealBest = [];
-        $idealWorst = [];
-
-        foreach ($criteria as $criterion) {
-            $values = [];
-            foreach ($touristSpots as $spot) {
-                $values[] = $weightedMatrix[$spot->id][$criterion->id];
-            }
-
-            if ($criterion->criteriaType->ideal_preference === 'min') {
-                $idealBest[$criterion->id]  = min($values);
-                $idealWorst[$criterion->id] = max($values);
-            } else if ($criterion->criteriaType->ideal_preference === 'max') {
-                $idealBest[$criterion->id]  = max($values);
-                $idealWorst[$criterion->id] = min($values);
-            }
-        }
-
-        /* -----------------------------
-         STEP 9: Separation measures
-        ------------------------------ */
-        $separations = [];
-        foreach ($touristSpots as $spot) {
-            $plus = 0;
-            $minus = 0;
-
-            foreach ($criteria as $criterion) {
-                $v = $weightedMatrix[$spot->id][$criterion->id];
-                $plus  += pow($v - $idealBest[$criterion->id], 2);
-                $minus += pow($v - $idealWorst[$criterion->id], 2);
-            }
-
-            $separations[$spot->id] = [
-                'positive' => sqrt($plus),
-                'negative' => sqrt($minus),
-            ];
-        }
-
-        /* -----------------------------
-         STEP 10: Relative closeness
-        ------------------------------ */
-        $relativeCloseness = [];
-        foreach ($touristSpots as $spot) {
-            $sp = $separations[$spot->id]['positive'];
-            $sn = $separations[$spot->id]['negative'];
-
-            $relativeCloseness[$spot->id] =
-                ($sp + $sn) > 0 ? $sn / ($sp + $sn) : 0;
-        }
-
-        arsort($relativeCloseness);
-
-        /* -----------------------------
-         STEP 11: Ranking output
-        ------------------------------ */
-        $rank = 1;
-        $results = [];
-
-        foreach ($relativeCloseness as $spotId => $ci) {
-            $spot = $touristSpots->firstWhere('id', $spotId);
-
-            $results[] = [
-                'rank' => $rank++,
-                'tourist_spot_id' => $spot->id,
-                'tourist_spot' => $spot->name,
-                'score' => round($ci, 4),
-            ];
-        }
-
-        $selectedCriteriaPayload = $criteria->map(function ($criterion) {
-            return [
-                'id' => $criterion->id,
-                'name' => $criterion->name,
-            ];
-        })->values();
-
-        $criteriaIdsSorted = $selectedCriteriaPayload->pluck('id')->map(function ($id) {
-            return (int) $id;
-        })->sort()->values()->all();
-
-        $criteriaSignature = implode('-', $criteriaIdsSorted);
+        $results = $this->buildRankedResults($relativeCloseness, $touristSpots);
+        $criteriaSignature = $this->buildCriteriaSignature($criteria);
 
         if ($weightingMethod && ($userId || $guestKey)) {
-            $completedAt = now();
-            $startedAt = $this->resolveMethodStartTime($request, $weightingMethod->code);
-            $timeTakenSeconds = $startedAt
-                ? max($startedAt->diffInSeconds($completedAt), 0)
-                : null;
-            $submitterName = \Illuminate\Support\Facades\Auth::user()?->name ?? 'Guest';
-            RecommendationRun::create([
-                'user_id' => $userId,
-                'guest_key' => $guestKey,
-                'weighting_method_id' => $weightingMethod->id,
-                'criteria_id' => $selectedCriteriaPayload->pluck('id')->values()->all(),
-                'criteria_weight' => $normalizedWeights,
-                'criteria_signature' => $criteriaSignature,
-                'ranked_results' => $results,
-                'submitted_to_admin' => true,
-                'submitted_at' => now(),
-                'submitter_name' => $submitterName,
-                'ip_address' => $request->ip(),
-                'started_at' => $startedAt,
-                'completed_at' => $completedAt,
-                'time_taken_seconds' => $timeTakenSeconds,
-            ]);
-
-            $request->session()->forget($this->methodTimerSessionKey($weightingMethod->code));
+            $this->saveRecommendationRun(
+                $request,
+                $weightingMethod,
+                $userId,
+                $guestKey,
+                $criteria,
+                $normalizedWeights,
+                $criteriaSignature,
+                $results
+            );
         }
-
-        $methodStatuses = $this->buildMethodStatuses($userId, $guestKey);
 
         return redirect()->route('recommendations.results')->with('resultDataRunId', $weightingMethod->id);
     }
@@ -539,11 +320,7 @@ class RecommendationController extends Controller
                 ->with('error', 'Weighting method not found for SUS submission.');
         }
 
-        $runQuery = RecommendationRun::query()
-            ->where('weighting_method_id', $weightingMethod->id)
-            ->latest();
-        $this->applyActorScope($runQuery, $userId, $guestKey);
-        $run = $runQuery->first();
+        $run = $this->getRecommendationRun($weightingMethod->id, $userId, $guestKey);
 
         if (!$run) {
             return redirect()
@@ -557,20 +334,8 @@ class RecommendationController extends Controller
                 ->with('info', 'You have already submitted SUS feedback for this method.');
         }
 
-        $responses = [];
-        for ($i = 1; $i <= 10; $i++) {
-            $responses['q' . $i] = (int) $validated['sus_q' . $i];
-        }
-
-        $susSum = 0;
-        for ($i = 1; $i <= 10; $i++) {
-            $answer = $responses['q' . $i];
-            $susSum += ($i % 2 !== 0)
-                ? max($answer - 1, 0)
-                : max(5 - $answer, 0);
-        }
-
-        $susScore = round($susSum * 2.5, 2);
+        $responses = $this->extractSusResponses($validated);
+        $susScore = $this->calculateSusScore($responses);
 
         $run->update([
             'sus_responses' => $responses,
@@ -595,26 +360,11 @@ class RecommendationController extends Controller
             ->get();
 
         $criteriaSignature = (string) $request->query('criteria_signature', '');
-
-        $allRunsQuery = RecommendationRun::with('weightingMethod');
-        $this->applyActorScope($allRunsQuery, $userId, $guestKey);
-
-        $allRuns = $allRunsQuery
-            ->latest()
-            ->get();
-
-        $methodRuns = [];
-        foreach ($methods as $method) {
-            $methodRuns[$method->code] = $allRuns->first(function ($run) use ($method) {
-                return optional($run->weightingMethod)->code === $method->code;
-            });
-        }
+        $methodRuns = $this->getMethodRunsForComparison($userId, $guestKey, $methods);
 
         $availableSignatures = collect($methodRuns)
             ->filter()
-            ->map(function ($run) {
-                return $run->criteria_signature ?: $this->criteriaSignatureFromArray($run->criteria_id);
-            })
+            ->map(fn($run) => $run->criteria_signature ?: $this->criteriaSignatureFromArray($run->criteria_id))
             ->filter()
             ->unique()
             ->values();
@@ -627,79 +377,21 @@ class RecommendationController extends Controller
 
         $allSelectedCriteriaIds = collect($methodRuns)
             ->filter()
-            ->flatMap(function ($run) {
-                return is_array($run->criteria_id) ? $run->criteria_id : [];
-            })
-            ->map(function ($id) {
-                return (int) $id;
-            })
+            ->flatMap(fn($run) => is_array($run->criteria_id) ? $run->criteria_id : [])
+            ->map(fn($id) => (int) $id)
             ->filter()
             ->unique()
             ->values();
 
-        $criteriaNameMap = [];
-        if ($allSelectedCriteriaIds->isNotEmpty()) {
-            $criteriaNameMap = Criteria::whereIn('id', $allSelectedCriteriaIds->all())
-                ->pluck('name', 'id')
-                ->toArray();
-        }
+        $criteriaNameMap = $allSelectedCriteriaIds->isNotEmpty()
+            ? Criteria::whereIn('id', $allSelectedCriteriaIds->all())->pluck('name', 'id')->toArray()
+            : [];
 
-        $methodSelectedCriteria = [];
-        foreach ($methods as $method) {
-            $run = $methodRuns[$method->code] ?? null;
-            $criteriaIdsForMethod = ($run && is_array($run->criteria_id))
-                ? array_map('intval', $run->criteria_id)
-                : [];
-
-            $criteriaNamesForMethod = [];
-            foreach ($criteriaIdsForMethod as $criteriaId) {
-                if (isset($criteriaNameMap[$criteriaId])) {
-                    $criteriaNamesForMethod[] = $criteriaNameMap[$criteriaId];
-                }
-            }
-
-            $methodSelectedCriteria[$method->code] = $criteriaNamesForMethod;
-        }
-
-        $spotRows = [];
-        foreach ($methodRuns as $methodCode => $run) {
-            $rankedResults = $run && is_array($run->ranked_results) ? $run->ranked_results : [];
-
-            foreach ($rankedResults as $result) {
-                $spotId = $result['tourist_spot_id'] ?? null;
-                if (!$spotId) {
-                    continue;
-                }
-
-                if (!isset($spotRows[$spotId])) {
-                    $spotRows[$spotId] = [
-                        'tourist_spot_id' => $spotId,
-                        'tourist_spot' => $result['tourist_spot'] ?? ('Spot #' . $spotId),
-                        'ranks' => [],
-                        'scores' => [],
-                    ];
-                }
-
-                $spotRows[$spotId]['ranks'][$methodCode] = isset($result['rank']) ? (int) $result['rank'] : null;
-                $spotRows[$spotId]['scores'][$methodCode] = isset($result['score']) ? (float) $result['score'] : null;
-            }
-        }
-
-        foreach ($spotRows as &$row) {
-            $rankValues = array_filter($row['ranks'], function ($rank) {
-                return is_int($rank) && $rank > 0;
-            });
-
-            $row['avg_rank'] = !empty($rankValues)
-                ? round(array_sum($rankValues) / count($rankValues), 2)
-                : null;
-        }
-        unset($row);
+        $methodSelectedCriteria = $this->buildMethodCriteria($methods, $methodRuns, $criteriaNameMap);
+        $spotRows = $this->buildComparisonSpotRows($methodRuns, $methods);
 
         $compareRows = collect($spotRows)
-            ->sortBy(function ($row) {
-                return $row['avg_rank'] ?? PHP_INT_MAX;
-            })
+            ->sortBy(fn($row) => $row['avg_rank'] ?? PHP_INT_MAX)
             ->values();
 
         return view('recommendations.compare', [
@@ -709,6 +401,53 @@ class RecommendationController extends Controller
             'compareRows' => $compareRows,
             'criteriaSignature' => $criteriaSignature,
             'hasMixedCriteriaSignatures' => $hasMixedCriteriaSignatures,
+        ]);
+    }
+
+    public function downloadComparisonCsv(Request $request)
+    {
+        $actor = $this->resolveActorContext($request);
+        $userId = $actor['user_id'];
+        $guestKey = $actor['guest_key'];
+
+        $methods = WeightingMethod::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $methodRuns = $this->getMethodRunsForComparison($userId, $guestKey, $methods);
+        $spotRows = $this->buildComparisonSpotRows($methodRuns, $methods, includeScores: false);
+
+        $compareRows = collect($spotRows)
+            ->sortBy(fn($row) => $row['avg_rank'] ?? PHP_INT_MAX)
+            ->values();
+
+        $fileName = 'method-comparison-' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($compareRows, $methods) {
+            $output = fopen('php://output', 'w');
+
+            $header = ['Tourist Spot'];
+            foreach ($methods as $method) {
+                $header[] = $method->name . ' Rank';
+            }
+            $header[] = 'Average Rank';
+            fputcsv($output, $header);
+
+            foreach ($compareRows as $row) {
+                $line = [$row['tourist_spot'] ?? ''];
+
+                foreach ($methods as $method) {
+                    $rank = $row['ranks'][$method->code] ?? null;
+                    $line[] = $rank ?? '-';
+                }
+
+                $line[] = $row['avg_rank'] ?? '-';
+                fputcsv($output, $line);
+            }
+
+            fclose($output);
+        }, $fileName, [
+            'Content-Type' => 'text/csv',
         ]);
     }
 
@@ -824,10 +563,6 @@ class RecommendationController extends Controller
             'method_code' => 'required|string',
         ]);
 
-        if ($request->session()->has('resultData')) {
-            $request->session()->keep(['resultData']);
-        }
-
         $actor = $this->resolveActorContext($request);
         $userId = $actor['user_id'];
         $guestKey = $actor['guest_key'];
@@ -897,6 +632,356 @@ class RecommendationController extends Controller
         return implode('-', $ids);
     }
 
+    private function getCriteriaTypes()
+    {
+        return CriteriaType::with('criteria')->orderBy('name')->get();
+    }
+
+    private function getUserWeights(): array
+    {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            return [];
+        }
+
+        return \App\Models\UserCriteriaWeight::where('user_id', $userId)
+            ->pluck('weight', 'criteria_id')
+            ->toArray();
+    }
+
+    private function loadCriteriaWeights(Request $request, $allCriteria, ?int $userId): array
+    {
+        $weightsRaw = [];
+
+        foreach ($allCriteria as $criterion) {
+            $field = 'score_' . $criterion->id;
+            if ($request->has($field)) {
+                $val = (float) $request->input($field);
+                if ($val > 0) {
+                    $weightsRaw[$criterion->id] = $val;
+                    if ($userId) {
+                        \App\Models\UserCriteriaWeight::updateOrCreate(
+                            ['user_id' => $userId, 'criteria_id' => $criterion->id],
+                            ['weight' => $val]
+                        );
+                    }
+                } elseif ($userId) {
+                    \App\Models\UserCriteriaWeight::where('user_id', $userId)
+                        ->where('criteria_id', $criterion->id)
+                        ->delete();
+                }
+            } elseif ($userId) {
+                $dbWeight = \App\Models\UserCriteriaWeight::where('user_id', $userId)
+                    ->where('criteria_id', $criterion->id)
+                    ->first();
+                if ($dbWeight && $dbWeight->weight > 0) {
+                    $weightsRaw[$criterion->id] = $dbWeight->weight;
+                }
+            }
+        }
+
+        return $weightsRaw;
+    }
+
+    private function buildDecisionMatrix($touristSpots, $criteria, $criteriaIds): array
+    {
+        $decisionMatrix = [];
+        foreach ($touristSpots as $spot) {
+            foreach ($criteria as $criterion) {
+                $decisionMatrix[$spot->id][$criterion->id] = 0;
+            }
+        }
+
+        $ratings = TouristSpotCriteriaRating::whereIn('tourist_spot_id', $touristSpots->pluck('id'))
+            ->whereIn('criteria_id', $criteriaIds)
+            ->get();
+
+        foreach ($ratings as $rating) {
+            $decisionMatrix[$rating->tourist_spot_id][$rating->criteria_id] = $rating->raw_value;
+        }
+
+        return $decisionMatrix;
+    }
+
+    private function normalizeMatrix(array $decisionMatrix, $touristSpots, $criteria): array
+    {
+        $normalizedMatrix = [];
+
+        foreach ($criteria as $criterion) {
+            $sumSquares = 0;
+            foreach ($touristSpots as $spot) {
+                $val = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
+                $sumSquares += pow($val, 2);
+            }
+            $denominator = sqrt($sumSquares);
+
+            foreach ($touristSpots as $spot) {
+                $originalValue = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
+                $normalizedVal = $denominator > 0 ? $originalValue / $denominator : 0;
+                $normalizedMatrix[$spot->id][$criterion->id] = $normalizedVal;
+            }
+        }
+
+        return $normalizedMatrix;
+    }
+
+    private function normalizeWeights(array $weightsRaw, $criteria): array
+    {
+        $totalWeight = array_sum($weightsRaw);
+        $normalizedWeights = [];
+
+        foreach ($criteria as $criterion) {
+            $normalizedWeights[$criterion->id] = $totalWeight > 0
+                ? ($weightsRaw[$criterion->id] ?? 0) / $totalWeight
+                : 1 / count($criteria);
+        }
+
+        return $normalizedWeights;
+    }
+
+    private function buildWeightedMatrix(array $normalizedMatrix, array $normalizedWeights, $touristSpots, $criteria): array
+    {
+        $weightedMatrix = [];
+        foreach ($touristSpots as $spot) {
+            foreach ($criteria as $criterion) {
+                $weightedMatrix[$spot->id][$criterion->id] =
+                    $normalizedMatrix[$spot->id][$criterion->id] *
+                    $normalizedWeights[$criterion->id];
+            }
+        }
+
+        return $weightedMatrix;
+    }
+
+    private function calculateIdealPoints(array $weightedMatrix, $criteria, $touristSpots): array
+    {
+        $idealBest = [];
+        $idealWorst = [];
+
+        foreach ($criteria as $criterion) {
+            $values = [];
+            foreach ($touristSpots as $spot) {
+                $values[] = $weightedMatrix[$spot->id][$criterion->id];
+            }
+
+            if ($criterion->criteriaType->ideal_preference === 'min') {
+                $idealBest[$criterion->id] = min($values);
+                $idealWorst[$criterion->id] = max($values);
+            } else {
+                $idealBest[$criterion->id] = max($values);
+                $idealWorst[$criterion->id] = min($values);
+            }
+        }
+
+        return [$idealBest, $idealWorst];
+    }
+
+    private function calculateSeparations(array $weightedMatrix, array $idealBest, array $idealWorst, $criteria, $touristSpots): array
+    {
+        $separations = [];
+        foreach ($touristSpots as $spot) {
+            $plus = 0;
+            $minus = 0;
+
+            foreach ($criteria as $criterion) {
+                $v = $weightedMatrix[$spot->id][$criterion->id];
+                $plus += pow($v - $idealBest[$criterion->id], 2);
+                $minus += pow($v - $idealWorst[$criterion->id], 2);
+            }
+
+            $separations[$spot->id] = [
+                'positive' => sqrt($plus),
+                'negative' => sqrt($minus),
+            ];
+        }
+
+        return $separations;
+    }
+
+    private function calculateRelativeCloseness(array $separations, $touristSpots): array
+    {
+        $relativeCloseness = [];
+        foreach ($touristSpots as $spot) {
+            $sp = $separations[$spot->id]['positive'];
+            $sn = $separations[$spot->id]['negative'];
+            $relativeCloseness[$spot->id] = ($sp + $sn) > 0 ? $sn / ($sp + $sn) : 0;
+        }
+
+        arsort($relativeCloseness);
+        return $relativeCloseness;
+    }
+
+    private function buildRankedResults(array $relativeCloseness, $touristSpots): array
+    {
+        $results = [];
+        $rank = 1;
+
+        foreach ($relativeCloseness as $spotId => $ci) {
+            $spot = $touristSpots->firstWhere('id', $spotId);
+            $results[] = [
+                'rank' => $rank++,
+                'tourist_spot_id' => $spot->id,
+                'tourist_spot' => $spot->name,
+                'score' => round($ci, 4),
+            ];
+        }
+
+        return $results;
+    }
+
+    private function buildCriteriaSignature($criteria): string
+    {
+        $criteriaIds = $criteria->pluck('id')->map(fn($id) => (int) $id)->sort()->values()->all();
+        return implode('-', $criteriaIds);
+    }
+
+    private function saveRecommendationRun(Request $request, $weightingMethod, ?int $userId, ?string $guestKey, $criteria, array $normalizedWeights, string $criteriaSignature, array $results): void
+    {
+        $completedAt = now();
+        $startedAt = $this->resolveMethodStartTime($request, $weightingMethod->code);
+        $timeTakenSeconds = $startedAt ? max($startedAt->diffInSeconds($completedAt), 0) : null;
+        $submitterName = \Illuminate\Support\Facades\Auth::user()?->name ?? 'Guest';
+
+        $demographic = null;
+        if ($userId) {
+            $demographic = UserDemographic::where('user_id', $userId)->first();
+        } elseif ($guestKey) {
+            $demographic = UserDemographic::where('guest_key', $guestKey)->first();
+        }
+
+        RecommendationRun::create([
+            'user_id' => $userId,
+            'guest_key' => $guestKey,
+            'user_demographics_id' => $demographic?->id,
+            'weighting_method_id' => $weightingMethod->id,
+            'criteria_id' => $criteria->pluck('id')->values()->all(),
+            'criteria_weight' => $normalizedWeights,
+            'criteria_signature' => $criteriaSignature,
+            'ranked_results' => $results,
+            'submitted_to_admin' => true,
+            'submitted_at' => now(),
+            'submitter_name' => $submitterName,
+            'ip_address' => $request->ip(),
+            'started_at' => $startedAt,
+            'completed_at' => $completedAt,
+            'time_taken_seconds' => $timeTakenSeconds,
+        ]);
+
+        $request->session()->forget($this->methodTimerSessionKey($weightingMethod->code));
+    }
+
+    private function extractSusResponses(array $validated): array
+    {
+        $responses = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $responses['q' . $i] = (int) $validated['sus_q' . $i];
+        }
+        return $responses;
+    }
+
+    private function calculateSusScore(array $responses): float
+    {
+        $susSum = 0;
+        for ($i = 1; $i <= 10; $i++) {
+            $answer = $responses['q' . $i];
+            $susSum += ($i % 2 !== 0)
+                ? max($answer - 1, 0)
+                : max(5 - $answer, 0);
+        }
+        return round($susSum * 2.5, 2);
+    }
+
+    private function getRecommendationRun(int $weightingMethodId, ?int $userId, ?string $guestKey): ?RecommendationRun
+    {
+        $query = RecommendationRun::query()
+            ->where('weighting_method_id', $weightingMethodId)
+            ->latest();
+        $this->applyActorScope($query, $userId, $guestKey);
+        return $query->first();
+    }
+
+    private function getMethodRunsForComparison(?int $userId, ?string $guestKey, $methods): array
+    {
+        $allRunsQuery = RecommendationRun::with('weightingMethod');
+        $this->applyActorScope($allRunsQuery, $userId, $guestKey);
+        $allRuns = $allRunsQuery->latest()->get();
+
+        $methodRuns = [];
+        foreach ($methods as $method) {
+            $methodRuns[$method->code] = $allRuns->first(fn($run) => optional($run->weightingMethod)->code === $method->code);
+        }
+
+        return $methodRuns;
+    }
+
+    private function buildMethodCriteria($methods, array $methodRuns, array $criteriaNameMap): array
+    {
+        $methodSelectedCriteria = [];
+        foreach ($methods as $method) {
+            $run = $methodRuns[$method->code] ?? null;
+            $criteriaIdsForMethod = ($run && is_array($run->criteria_id))
+                ? array_map('intval', $run->criteria_id)
+                : [];
+
+            $criteriaNamesForMethod = [];
+            foreach ($criteriaIdsForMethod as $criteriaId) {
+                if (isset($criteriaNameMap[$criteriaId])) {
+                    $criteriaNamesForMethod[] = $criteriaNameMap[$criteriaId];
+                }
+            }
+
+            $methodSelectedCriteria[$method->code] = $criteriaNamesForMethod;
+        }
+
+        return $methodSelectedCriteria;
+    }
+
+    private function buildComparisonSpotRows(array $methodRuns, $methods, bool $includeScores = true): array
+    {
+        $spotRows = [];
+        foreach ($methodRuns as $methodCode => $run) {
+            $rankedResults = $run && is_array($run->ranked_results) ? $run->ranked_results : [];
+
+            foreach ($rankedResults as $result) {
+                $spotId = $result['tourist_spot_id'] ?? null;
+                if (!$spotId) {
+                    continue;
+                }
+
+                if (!isset($spotRows[$spotId])) {
+                    $spotRows[$spotId] = [
+                        'tourist_spot_id' => $spotId,
+                        'tourist_spot' => $result['tourist_spot'] ?? ('Spot #' . $spotId),
+                        'ranks' => [],
+                    ];
+                    if ($includeScores) {
+                        $spotRows[$spotId]['scores'] = [];
+                    }
+                }
+
+                $spotRows[$spotId]['ranks'][$methodCode] = isset($result['rank']) ? (int) $result['rank'] : null;
+                if ($includeScores) {
+                    $spotRows[$spotId]['scores'][$methodCode] = isset($result['score']) ? (float) $result['score'] : null;
+                }
+            }
+        }
+
+        foreach ($spotRows as &$row) {
+            $rankValues = array_filter($row['ranks'], fn($rank) => is_int($rank) && $rank > 0);
+            $row['avg_rank'] = !empty($rankValues)
+                ? round(array_sum($rankValues) / count($rankValues), 2)
+                : null;
+        }
+        unset($row);
+
+        return $spotRows;
+    }
+
+    private function methodTimerSessionKey(string $methodCode): string
+    {
+        return 'recommendation_method_started_at.' . $methodCode;
+    }
+
     private function startMethodTimer(Request $request, string $methodCode): void
     {
         $request->session()->put($this->methodTimerSessionKey($methodCode), now()->toIso8601String());
@@ -915,10 +1000,5 @@ class RecommendationController extends Controller
         } catch (\Throwable $exception) {
             return null;
         }
-    }
-
-    private function methodTimerSessionKey(string $methodCode): string
-    {
-        return 'recommendation_method_started_at.' . $methodCode;
     }
 }

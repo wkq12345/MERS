@@ -4,6 +4,121 @@
 
 @push('styles')
     <style>
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+            transition: grid-template-columns 0.25s ease;
+        }
+
+        .dashboard-layout.sidebar-collapsed {
+            grid-template-columns: 88px 1fr;
+        }
+
+        .dashboard-sidebar {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            position: sticky;
+            top: 1rem;
+        }
+
+        .sidebar-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #111827;
+        }
+
+        .sidebar-toggle {
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background: #f9fafb;
+            color: #374151;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin: 1rem 0 0.5rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            width: 100%;
+            text-decoration: none;
+            color: #374151;
+            padding: 0.65rem 0.75rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .sidebar-link.active {
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        .dashboard-main {
+            min-width: 0;
+        }
+
+        .dashboard-layout.sidebar-collapsed .dashboard-sidebar {
+            padding: 1rem 0.5rem;
+        }
+
+        .dashboard-layout.sidebar-collapsed .sidebar-title {
+            justify-content: center;
+        }
+
+        .dashboard-layout.sidebar-collapsed .sidebar-title-text,
+        .dashboard-layout.sidebar-collapsed .sidebar-section-label,
+        .dashboard-layout.sidebar-collapsed .sidebar-link-label {
+            display: none;
+        }
+
+        .dashboard-layout.sidebar-collapsed .sidebar-link {
+            justify-content: center;
+            padding: 0.65rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-sidebar {
+                position: static;
+            }
+
+            .sidebar-toggle {
+                display: none;
+            }
+        }
+
         /* Custom Gradient Background for Left Panel */
         .gradient-panel {
             background: linear-gradient(to right, #2563eb, #3b82f6, #22d3ee);
@@ -124,133 +239,126 @@
 @endpush
 
 @section('content')
-    <div class="mb-5">
-        <h2 class="fw-bold mb-2 d-flex align-items-center gap-2">
-            <i class="bi bi-grid-fill fs-4 text-dark"></i>
-            Start your recommendation now!
-        </h2>
-        <p class="text-secondary">Welcome to your personalized ecotourism experience!</p>
-    </div>
+@include('user.user_demographic')
 
-    <div class="row g-4">
-        <!-- Left Side - Personalized Recommendations -->
-        <div class="col-12 col-lg-7">
-            <div class="gradient-panel">
-                <div class="mb-4">
-                    <h3 class="h4 fw-bold mb-2 d-flex align-items-center gap-2">
-                        <i class="bi bi-stars"></i>
-                        Pick one method that you like
-                    </h3>
-                    <p class="opacity-75 small">
-                        Let our intelligent TOPSIS algorithm recommend the best ecotourism spots based on your preferences.
-                        Rate your interests and get personalized suggestions!
-                    </p>
+        <main class="dashboard-main">
+
+
+            <div class="row g-4">
+                <!-- Left Side - Personalized Recommendations -->
+                <div class="col-12 col-lg-7">
+                    <div class="gradient-panel">
+                        <div class="mb-4">
+                            <h3 class="h4 fw-bold mb-2 d-flex align-items-center gap-2">
+                                <i class="bi bi-stars"></i>
+                                Pick one method that you like
+                            </h3>
+                            <p class="opacity-75 small">
+                                This is a research used system to evaluate different weightage method based on TOPSIS algorithm to
+                                recommend the best ecotourism spots.
+                            </p>
+                        </div>
+
+                        <div class="d-flex flex-column gap-3">
+                            <!-- Method 1 -->
+                            <div class="method-item">
+                                <a href="{{ route('recommendations.drm') }}" class="method-btn">
+                                    <i class="bi bi-stars method-icon"></i>
+                                    <div>
+                                        <div class="fw-semibold">Direct Rating Method</div>
+                                        <div class="small text-secondary">Start from rating scale based on your preferences</div>
+                                    </div>
+                                </a>
+                                <div class="method-explanation">
+                                    A direct rating method is a technique used in decision-making and assessment to assign numerical
+                                    or categorical values (e.g., 1-10 scale) directly to items or criteria based on their perceived
+                                    importance, quality, or value. It is a simple, quick approach for weighting factors or measuring
+                                    subjective opinions in marketing, psychology, and performance evaluations.
+                                </div>
+                            </div>
+
+                            <!-- Method 2 -->
+                            <div class="method-item">
+                                <a href="{{ route('recommendations.hdm') }}" class="method-btn">
+                                    <i class="bi bi-graph-up-arrow method-icon"></i>
+                                    <div>
+                                        <div class="fw-semibold">Hundred Dollar Method</div>
+                                        <div class="small text-secondary">Rate by assuming your budget is $100</div>
+                                    </div>
+                                </a>
+                                <div class="method-explanation">
+                                    The hundred dollar method (or 100-point method) is a simple, democratic prioritization
+                                    technique where stakeholders are given 100 "dollars" or points to distribute across various options,
+                                    features, or tasks. It forces participants to make trade-offs, highlighting top priorities by showing
+                                    where they invest their limited budget.
+                                </div>
+                            </div>
+
+                            <!-- Method 3 -->
+                            <div class="method-item">
+                                <a href="{{ route('recommendations.kano') }}" class="method-btn">
+                                    <i class="bi bi-heart-fill method-icon"></i>
+                                    <div>
+                                        <div class="fw-semibold">Kano Model</div>
+                                        <div class="small text-secondary">Choose this when you deeply understand your needs</div>
+                                    </div>
+                                </a>
+                                <div class="method-explanation">
+                                The Kano Model* is a way to classify customer preferences by exploring how customers react to
+                                certain product capabilities or features. It can help Scrum Teams priortize experiments and features
+                                based on how likely they are to satisfy customers.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex flex-wrap gap-2">
+                            <a href="{{ route('recommendations.compare') }}" class="btn btn-light fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-bar-chart-line"></i>
+                                Compare Methods
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="d-flex flex-column gap-3">
-                    <!-- Method 1 -->
-                    <div class="method-item">
-                        <a href="{{ route('recommendations.drm') }}" class="method-btn">
-                            <i class="bi bi-stars method-icon"></i>
-                            <div>
-                                <div class="fw-semibold">Direct Rating Method</div>
-                                <div class="small text-secondary">Start from rating scale based on your preferences</div>
+                <!-- Right Side - Tourist Spots, Locations, Profile -->
+                <div class="col-12 col-lg-5">
+                    <div class="d-flex flex-column gap-4">
+                        <!-- Tourist Spots -->
+                        <div class="action-card">
+                            <div class="icon-circle">
+                                <i class="bi bi-geo-alt-fill"></i>
                             </div>
-                        </a>
-                        <div class="method-explanation">
-                            Our advanced TOPSIS algorithm analyzes your preferences, travel history, and interests to
-                            recommend the most suitable ecotourism destinations tailored just for you.
+                            <h5 class="fw-bold mb-2">Tourist Spots</h5>
+                            <p class="text-secondary small mb-3">
+                                Browse and explore ecotourism destinations across Malaysia
+                            </p>
+                            <a href="{{ route('viewTouristSpot') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
+                                <i class="bi bi-geo-alt"></i> View Spots
+                            </a>
+                        </div>
+
+                        <!-- Locations -->
+                        <div class="action-card">
+                            <div class="icon-circle">
+                                <i class="bi bi-map-fill"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2">Locations</h5>
+                            <p class="text-secondary small mb-3">
+                                Discover different states and regions in Malaysia
+                            </p>
+                            <a href="{{ route('viewLocation') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
+                                <i class="bi bi-map"></i> View Locations
+                            </a>
+                        </div>
                         </div>
                     </div>
-
-                    <!-- Method 2 -->
-                    <div class="method-item">
-                        <a href="{{ route('recommendations.hdm') }}" class="method-btn">
-                            <i class="bi bi-graph-up-arrow method-icon"></i>
-                            <div>
-                                <div class="fw-semibold">Hundred Dollar Method</div>
-                                <div class="small text-secondary">Rate by assuming your budget is $100</div>
-                            </div>
-                        </a>
-                        <div class="method-explanation">
-                            Discover the most popular ecotourism destinations by allocating a virtual budget. See what's
-                            valuable to you and find your next adventure based on value.
-                        </div>
-                    </div>
-
-                    <!-- Method 3 -->
-                    <div class="method-item">
-                        <a href="{{ route('recommendations.kano') }}" class="method-btn">
-                            <i class="bi bi-heart-fill method-icon"></i>
-                            <div>
-                                <div class="fw-semibold">Kano Model</div>
-                                <div class="small text-secondary">Choose this when you deeply understand your needs</div>
-                            </div>
-                        </a>
-                        <div class="method-explanation">
-                            Analyze distinct features of destinations to classify them into must-haves, performance
-                            attributes, and delighters for a deeply satisfying experience.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4 d-flex flex-wrap gap-2">
-                    <a href="{{ route('recommendations.compare') }}" class="btn btn-light fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2">
-                        <i class="bi bi-bar-chart-line"></i>
-                        Compare Methods
-                    </a>
                 </div>
             </div>
-        </div>
-
-        <!-- Right Side - Tourist Spots, Locations, Profile -->
-        <div class="col-12 col-lg-5">
-            <div class="d-flex flex-column gap-4">
-                <!-- Tourist Spots -->
-                <div class="action-card">
-                    <div class="icon-circle">
-                        <i class="bi bi-geo-alt-fill"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Tourist Spots</h5>
-                    <p class="text-secondary small mb-3">
-                        Browse and explore ecotourism destinations across Malaysia
-                    </p>
-                    <a href="{{ route('viewTouristSpot') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-geo-alt"></i> View Spots
-                    </a>
-                </div>
-
-                <!-- Locations -->
-                <div class="action-card">
-                    <div class="icon-circle">
-                        <i class="bi bi-map-fill"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Locations</h5>
-                    <p class="text-secondary small mb-3">
-                        Discover different states and regions in Malaysia
-                    </p>
-                    <a href="{{ route('viewLocation') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-map"></i> View Locations
-                    </a>
-                </div>
-
-                <!-- Profile -->
-                <div class="action-card">
-                    <div class="icon-circle">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Profile</h5>
-                    <p class="text-secondary small mb-3">
-                        Manage your account settings and preferences
-                    </p>
-                    <a href="{{ route('profile.show') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-person"></i> View Profile
-                    </a>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
 
 
 
 @endsection
+
+
