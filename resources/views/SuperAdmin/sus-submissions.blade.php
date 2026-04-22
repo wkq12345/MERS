@@ -45,6 +45,8 @@
                             <tr>
                                 <th class="px-4 py-3">#</th>
                                 <th class="py-3">Submitted By</th>
+                                <th class="py-3">Guest Key</th>
+                                <th class="py-3">Recommendation Method</th>
                                 <th class="py-3">SUS Score</th>
                                 <th class="py-3">Submitted At</th>
                                 <th class="py-3 text-end pe-4">Actions</th>
@@ -65,6 +67,14 @@
                                         @else
                                             <div class="text-muted small fst-italic">Guest session</div>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="text-muted small">{{ $submission->guest_key ?? '—' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted small">
+                                            {{ $submission->recommendationRun?->weightingMethod?->name ?? '—' }}
+                                        </span>
                                     </td>
                                     <td>
                                         <span class="badge rounded-pill" style="background:#dcfce7;color:#166534;">
@@ -121,6 +131,25 @@
                             </div>
                             <div class="modal-body">
                                 <div class="row g-3 mb-3">
+                                    <div>
+                                        <div class="text-muted small">Submitted By</div>
+                                        <div class="fw-semibold">
+                                            {{ $submission->user?->name ?? 'Guest' }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Guest Key</div>
+                                        <div class="fw-semibold">
+                                            {{ $submission->guest_key ?? '—' }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                            <div class="text-muted small">Recommendation Method</div>
+                                            <div class="fw-semibold">
+                                                {{ $submission->recommendationRun?->weightingMethod?->name ?? '—' }}
+                                            </div>
+                                    </div>
+
                                     <div class="col-sm-6">
                                         <div class="text-muted small">SUS score</div>
                                         <div class="fw-semibold">{{ number_format((float) $submission->sus_score, 2) }}/100</div>

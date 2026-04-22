@@ -10,15 +10,15 @@ return new class extends Migration
     {
         Schema::create('sus_submissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('recommendation_run_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('guest_key', 64)->nullable();
+            $table->foreign('guest_key')->references('guest_key')->on('user_demographics')->nullOnDelete();
             $table->json('sus_responses');
             $table->decimal('sus_score', 5, 2);
             $table->timestamp('submitted_at');
             $table->timestamps();
 
-            $table->unique('user_id');
-            $table->unique('guest_key');
+            $table->unique('recommendation_run_id');
             $table->index('sus_score');
             $table->index('submitted_at');
         });

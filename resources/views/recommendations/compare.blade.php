@@ -45,14 +45,15 @@
                     <h2 class="tw-text-3xl tw-text-gray-900 tw-font-semibold tw-mb-1">Method Comparison</h2>
                     <p class="tw-text-gray-600">Side-by-side ranking comparison across DRM, HDM, and Kano for the same criteria set.</p>
                 </div>
-                <div>
+            </div>
+
+                            <div>
                     <a href="{{ route('recommendations.compare.download') }}"
                         class="tw-inline-flex tw-items-center tw-gap-2 tw-px-4 tw-py-2 tw-rounded-lg tw-bg-emerald-600 tw-text-white hover:tw-bg-emerald-700 tw-no-underline hover:tw-no-underline">
                         <i class="bi bi-download"></i>
                         Download Result (CSV)
                     </a>
                 </div>
-            </div>
 
             <div class="tw-mb-6 tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-p-4">
                 <div class="tw-flex tw-items-center tw-gap-2 tw-mb-3">

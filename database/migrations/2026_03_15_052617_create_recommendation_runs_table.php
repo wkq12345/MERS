@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('recommendation_runs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('guest_key', 64)->nullable();
+            $table->foreign('guest_key')->references('guest_key')->on('user_demographics')->nullOnDelete();
+            $table->index(['guest_key', 'criteria_signature']);
             $table->foreignId('weighting_method_id')->constrained()->onDelete('cascade');
             $table->json('criteria_id')->nullable();
             $table->json('criteria_weight')->nullable();

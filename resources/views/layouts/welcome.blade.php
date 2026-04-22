@@ -424,7 +424,9 @@
                     @yield('content')
                 </div>
             @endif
+
         </main>
+        @include('layouts.partials.footer')
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
@@ -445,6 +447,5 @@
     </script>
 
     @stack('scripts')
-
 </body>
 </html>

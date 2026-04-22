@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SusSubmission extends Model
 {
     protected $fillable = [
+        'recommendation_run_id',
         'user_id',
         'guest_key',
         'sus_responses',
@@ -23,5 +24,10 @@ class SusSubmission extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function recommendationRun()
+    {
+        return $this->belongsTo(RecommendationRun::class);
     }
 }

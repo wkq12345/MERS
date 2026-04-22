@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\UserDemographic;
 
 class User extends Authenticatable
 {
@@ -34,11 +35,6 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    public function demographic()
-    {
-        return $this->hasOne(UserDemographic::class);
-    }
-
     public function isSuperAdmin()
     {
         return $this->role?->role_name === 'super administrator';
@@ -47,6 +43,11 @@ class User extends Authenticatable
     public function isAdmin()
     {
         return $this->role?->role_name === 'administrator';
+    }
+
+    public function demographic()
+    {
+        return $this->hasOne(UserDemographic::class);
     }
 
     /**

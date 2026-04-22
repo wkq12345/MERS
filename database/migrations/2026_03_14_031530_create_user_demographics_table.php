@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('user_demographics', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('guest_key', 64)->nullable();
+            $table->string('guest_key', 64)->unique();
             $table->integer('age');
             $table->string('gender');
             $table->decimal('income', 10, 2);
             $table->unique('user_id');
-            $table->unique('guest_key');
+
             $table->timestamps();
         });
     }

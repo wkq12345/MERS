@@ -1,3 +1,4 @@
+
 @php
 	$authUser = auth()->user();
 	$guestKey = (string) session('recommendation_guest_key', '');

@@ -63,6 +63,7 @@
                                 <th class="py-3">Top 3 Spots</th>
                                 <th class="py-3">Favorite Spot</th>
                                 <th class="py-3">Criteria Used</th>
+                                <th class="py-3">Guest Key</th>
                                 <th class="py-3">IP Address</th>
                                 <th class="py-3 text-end pe-4">Actions</th>
                             </tr>
@@ -78,6 +79,7 @@
                                     $submitterDisplay = $run->submitter_name ?? ($run->user?->name ?? 'Guest');
                                     $timeTakenSeconds = $run->time_taken_seconds;
                                     $timeTakenLabel = '—';
+                                    $guestKey = $run->guest_key ?? '—';
                                     $ipAddress = $run->ip_address ?? '—';
 
                                     if (!is_null($timeTakenSeconds)) {
@@ -96,7 +98,7 @@
                                         $timeTakenLabel = implode(' ', $parts);
                                     }
                                 @endphp
-                                <tr>
+                                <>
                                     <td class="px-4 text-muted small">{{ $run->id }}</td>
                                     <td>
                                         <div class="fw-semibold">{{ $submitterDisplay }}</div>
@@ -145,6 +147,9 @@
                                         </div>
                                     </td>
                                     <td>
+                                        <span class="text-muted small">{{ $guestKey }}</span>
+                                    </td>
+                                    <td>
                                         <span class="text-muted small">{{ $ipAddress }}</span>
                                     </td>
                                     <td class="text-end pe-4">
@@ -175,6 +180,7 @@
                     $submitterDisplay = $run->submitter_name ?? ($run->user?->name ?? 'Guest');
                     $timeTakenSeconds = $run->time_taken_seconds;
                     $timeTakenLabel = '—';
+                    $guestKey = $run->guest_key ?? '—';
                     $ipAddress = $run->ip_address ?? '—';
 
                     if (!is_null($timeTakenSeconds)) {
@@ -234,6 +240,12 @@
                                                 <span class="text-muted fst-italic">None selected</span>
                                             @endif
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <div class="text-muted small">Guest Key</div>
+                                        <div class="fw-semibold">{{ $guestKey }}</div>
                                     </div>
                                 </div>
                                 <div class="row g-3 mb-3">
