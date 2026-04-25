@@ -104,9 +104,7 @@
                         </ul>
                     </div>
                 @else
-                    <div class="d-flex ms-lg-2">
-                        <a class="btn btn-light btn-sm" href="{{ route('login') }}">Login</a>
-                    </div>
+
                 @endauth
             </div>
         </div>

@@ -10,7 +10,6 @@ use App\Models\CriteriaType;
 use App\Models\WeightingMethod;
 use App\Models\RecommendationRun;
 use App\Models\SusSubmission;
-use App\Models\UserDemographic;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
@@ -871,15 +870,6 @@ class RecommendationController extends Controller
                 $guestKey = (string) Str::uuid();
                 $request->session()->put('recommendation_guest_key', $guestKey);
             }
-
-            UserDemographic::firstOrCreate(
-                ['guest_key' => $guestKey],
-                [
-                    'age' => 18,
-                    'gender' => 'Prefer not to say',
-                    'income' => 0.00,
-                ]
-            );
         }
 
         return [

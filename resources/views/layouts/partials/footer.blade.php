@@ -35,6 +35,7 @@
                             <h6 class="text-white mb-3">Quick Links</h6>
                             <div class="d-flex flex-column flex-md-row justify-content-md-end gap-3">
                                 <a href="{{ route('welcome') }}">Home</a>
+                                <a href="{{ route('user.dashboard') }}">Dashboard</a>
                                 <a href="{{ route('login') }}">Login</a>
 
                             </div>

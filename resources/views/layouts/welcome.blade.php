@@ -293,7 +293,7 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('user.dashboard') }}">
                                     <i class="bi bi-door-open me-1"></i>
-                                    Start
+                                    Try now
                                 </a>
                             </li>
                         @else

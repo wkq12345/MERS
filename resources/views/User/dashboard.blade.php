@@ -119,20 +119,13 @@
             /* blue-600 */
             font-size: 1.5rem;
         }
-
     </style>
 @endpush
 
 
 @section('content')
-@include('User.user_demographic')
-    <div class="mb-5">
-        <h2 class="fw-bold mb-2 d-flex align-items-center gap-2">
-            <i class="bi bi-grid-fill fs-4 text-dark"></i>
-            Start your recommendation now!
-        </h2>
-        <p class="text-secondary">Welcome to your personalized ecotourism experience!</p>
-    </div>
+    @include('User.user_demographic')
+
 
     <div class="row g-4">
         <!-- Left Side - Personalized Recommendations -->
@@ -144,8 +137,9 @@
                         Pick one method that you like
                     </h3>
                     <p class="opacity-75 small">
-                        Let our intelligent TOPSIS algorithm recommend the best ecotourism spots based on your preferences.
-                        Rate your interests and get personalized suggestions!
+                            This is a research used system to evaluate
+                            different weightage method based on TOPSIS algorithm to
+                            recommend the best ecotourism spots.
                     </p>
                 </div>
 
@@ -160,8 +154,10 @@
                             </div>
                         </a>
                         <div class="method-explanation">
-                            Our advanced TOPSIS algorithm analyzes your preferences, travel history, and interests to
-                            recommend the most suitable ecotourism destinations tailored just for you.
+                                A direct rating method is a technique used in decision-making and assessment to assign numerical
+                                or categorical values (e.g., 1-10 scale) directly to items or criteria based on their perceived
+                                importance, quality, or value. It is a simple, quick approach for weighting factors or measuring
+                                subjective opinions in marketing, psychology, and performance evaluations.
                         </div>
                     </div>
 
@@ -175,8 +171,10 @@
                             </div>
                         </a>
                         <div class="method-explanation">
-                            Discover the most popular ecotourism destinations by allocating a virtual budget. See what's
-                            valuable to you and find your next adventure based on value.
+                            The hundred dollar method (or 100-point method) is a simple, democratic prioritization
+                            technique where stakeholders are given 100 "dollars" or points to distribute across various options,
+                            features, or tasks. It forces participants to make trade-offs, highlighting top priorities by showing
+                            where they invest their limited budget.
                         </div>
                     </div>
 
@@ -190,14 +188,16 @@
                             </div>
                         </a>
                         <div class="method-explanation">
-                            Analyze distinct features of destinations to classify them into must-haves, performance
-                            attributes, and delighters for a deeply satisfying experience.
+                            The Kano Model* is a way to classify customer preferences by exploring how customers react to
+                            certain product capabilities or features. It can help Scrum Teams priortize experiments and features
+                            based on how likely they are to satisfy customers.
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex flex-wrap gap-2">
-                    <a href="{{ route('recommendations.compare') }}" class="btn btn-light fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2">
+                    <a href="{{ route('recommendations.compare') }}"
+                        class="btn btn-light fw-semibold px-4 py-2 d-inline-flex align-items-center gap-2">
                         <i class="bi bi-bar-chart-line"></i>
                         Compare Methods
                     </a>
@@ -237,19 +237,6 @@
                 </div>
 
 
-                <!-- Profile -->
-                <div class="action-card">
-                    <div class="icon-circle">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Profile</h5>
-                    <p class="text-secondary small mb-3">
-                        Manage your account settings and preferences
-                    </p>
-                    <a href="{{ route('profile.show') }}" class="btn btn-primary px-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-person"></i> View Profile
-                    </a>
-                </div>
             </div>
         </div>
     </div>

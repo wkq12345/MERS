@@ -7,7 +7,13 @@
 	if ($authUser) {
 		$hasDemographic = $authUser->demographic()->exists();
 	} elseif ($guestKey !== '') {
-		$hasDemographic = \App\Models\UserDemographic::where('guest_key', $guestKey)->exists();
+		$hasDemographic = \App\Models\UserDemographic::where('guest_key', $guestKey)
+			->where(function ($query) {
+				$query->where('gender', '!=', 'Prefer not to say')
+					->orWhere('age', '!=', 18)
+					->orWhere('income', '>', 0);
+			})
+			->exists();
 	}
 
 	$needsDemographic = !$hasDemographic;
