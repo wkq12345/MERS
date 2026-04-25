@@ -9,13 +9,8 @@ use App\Models\TouristSpotCriteriaRating;
 use App\Models\CriteriaType;
 use App\Models\WeightingMethod;
 use App\Models\RecommendationRun;
-
 use App\Models\SusSubmission;
 use App\Models\UserDemographic;
-
-
-
-
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
@@ -30,12 +25,15 @@ class RecommendationController extends Controller
         $latestRunQuery = RecommendationRun::query()->latest();
         $this->applyActorScope($latestRunQuery, $userId, $guestKey);
         $latestRun = $latestRunQuery->first();
+        $latestSusSubmission = $latestRun
+            ? SusSubmission::where('recommendation_run_id', $latestRun->id)->first()
+            : null;
 
         return view('User.dashboard', [
             'latestRunId' => $latestRun?->id,
             'latestRunMethodName' => optional($latestRun?->weightingMethod)->name,
-            'existingSusScore' => $latestRun?->sus_score,
-            'existingSusResponses' => $latestRun?->sus_responses,
+            'existingSusScore' => $latestSusSubmission?->sus_score,
+            'existingSusResponses' => $latestSusSubmission?->sus_responses,
             'latestRunCreatedAt' => $latestRun?->created_at,
         ]);
     }
@@ -81,17 +79,25 @@ class RecommendationController extends Controller
                 ->with('error', 'Selected method is invalid for SUS survey.');
         }
 
+        $methodRun = null;
         $submission = null;
         if ($selectedMethod) {
             $runQuery = RecommendationRun::query()
                 ->where('weighting_method_id', $selectedMethod->id)
                 ->latest();
             $this->applyActorScope($runQuery, $userId, $guestKey);
-            $submission = $runQuery->first();
+            $methodRun = $runQuery->first();
+
+            if ($methodRun) {
+                $submission = SusSubmission::query()
+                    ->where('recommendation_run_id', $methodRun->id)
+                    ->first();
+            }
         }
 
         return view('User.sus', [
             'submission' => $submission,
+            'methodRun' => $methodRun,
             'selectedMethod' => $selectedMethod,
             'methods' => $methods,
         ]);
@@ -190,8 +196,6 @@ class RecommendationController extends Controller
 
         $criteriaIds = $criteria->pluck('id')->toArray();
 
-
-
         /* -----------------------------
          STEP 2: Active tourist spots
         ------------------------------ */
@@ -227,21 +231,15 @@ class RecommendationController extends Controller
         $normalizedMatrix = [];
 
         foreach ($criteria as $criterion) {
-            // 1. Calculate the Vector Magnitude (Denominator) for this specific criterion
             $sumSquares = 0;
             foreach ($touristSpots as $spot) {
-                // Get the raw value (e.g., 100 for distance, 5 for review)
                 $val = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
                 $sumSquares += pow($val, 2);
             }
-            // Sqrt of sum of squares
             $denominator = sqrt($sumSquares);
 
-            // 2. Divide every spot's value by this denominator
             foreach ($touristSpots as $spot) {
                 $originalValue = $decisionMatrix[$spot->id][$criterion->id] ?? 0;
-
-                // Avoid division by zero if all values are 0
                 $normalizedVal = $denominator > 0
                     ? $originalValue / $denominator
                     : 0;
@@ -260,10 +258,7 @@ class RecommendationController extends Controller
             $normalizedWeights[$criterion->id] =
                 $totalWeight > 0
                 ? ($weightsRaw[$criterion->id] ?? 0) / $totalWeight
-                : 1 / count(
-                    $criteria,
-                    4
-                );
+                : 1 / max(count($criteria), 1);
         }
 
         /* -----------------------------
@@ -291,10 +286,10 @@ class RecommendationController extends Controller
             }
 
             if ($criterion->criteriaType->ideal_preference === 'min') {
-                $idealBest[$criterion->id]  = min($values);
+                $idealBest[$criterion->id] = min($values);
                 $idealWorst[$criterion->id] = max($values);
             } else if ($criterion->criteriaType->ideal_preference === 'max') {
-                $idealBest[$criterion->id]  = max($values);
+                $idealBest[$criterion->id] = max($values);
                 $idealWorst[$criterion->id] = min($values);
             }
         }
@@ -309,7 +304,7 @@ class RecommendationController extends Controller
 
             foreach ($criteria as $criterion) {
                 $v = $weightedMatrix[$spot->id][$criterion->id];
-                $plus  += pow($v - $idealBest[$criterion->id], 2);
+                $plus += pow($v - $idealBest[$criterion->id], 2);
                 $minus += pow($v - $idealWorst[$criterion->id], 2);
             }
 
@@ -340,7 +335,6 @@ class RecommendationController extends Controller
         $results = [];
 
         foreach ($relativeCloseness as $spotId => $ci) {
-
             $spot = $touristSpots->firstWhere('id', $spotId);
 
             $results[] = [
@@ -371,6 +365,7 @@ class RecommendationController extends Controller
                 ? max($startedAt->diffInSeconds($completedAt), 0)
                 : null;
             $submitterName = \Illuminate\Support\Facades\Auth::user()?->name ?? 'Guest';
+
             RecommendationRun::create([
                 'user_id' => $userId,
                 'guest_key' => $guestKey,
@@ -390,8 +385,6 @@ class RecommendationController extends Controller
 
             $request->session()->forget($this->methodTimerSessionKey($weightingMethod->code));
         }
-
-        $methodStatuses = $this->buildMethodStatuses($userId, $guestKey);
 
         return redirect()->route('recommendations.results')->with('resultDataRunId', $weightingMethod->id);
     }
@@ -555,7 +548,11 @@ class RecommendationController extends Controller
                 ->with('error', 'Please complete the selected method before submitting SUS feedback.');
         }
 
-        if (!is_null($run->sus_submitted_at)) {
+        $existingSubmission = SusSubmission::query()
+            ->where('recommendation_run_id', $run->id)
+            ->first();
+
+        if ($existingSubmission) {
             return redirect()
                 ->route('recommendations.sus.index', ['method_code' => $weightingMethod->code])
                 ->with('info', 'You have already submitted SUS feedback for this method.');
@@ -576,21 +573,12 @@ class RecommendationController extends Controller
 
         $susScore = round($susSum * 2.5, 2);
 
-        SusSubmission::updateOrCreate(
-            ['recommendation_run_id' => $run->id],
-            [
-                'guest_key' => $guestKey,
-                'sus_responses' => $responses,
-                'sus_score' => $susScore,
-                'submitted_at' => now(),
-            ]
-        );
-
-        $run->update([
+        SusSubmission::create([
+            'recommendation_run_id' => $run->id,
+            'guest_key' => $guestKey,
             'sus_responses' => $responses,
             'sus_score' => $susScore,
-            'sus_submitted_at' => now(),
-            'ip_address' => $request->ip(),
+            'submitted_at' => now(),
         ]);
 
         return redirect()
@@ -622,6 +610,15 @@ class RecommendationController extends Controller
             $methodRuns[$method->code] = $allRuns->first(function ($run) use ($method) {
                 return optional($run->weightingMethod)->code === $method->code;
             });
+        }
+
+        $methodSusSubmitted = [];
+        foreach ($methods as $method) {
+            $run = $methodRuns[$method->code] ?? null;
+
+            $methodSusSubmitted[$method->code] = $run
+                ? SusSubmission::where('recommendation_run_id', $run->id)->exists()
+                : false;
         }
 
         $availableSignatures = collect($methodRuns)
@@ -719,6 +716,7 @@ class RecommendationController extends Controller
         return view('recommendations.compare', [
             'methods' => $methods,
             'methodRuns' => $methodRuns,
+            'methodSusSubmitted' => $methodSusSubmitted,
             'methodSelectedCriteria' => $methodSelectedCriteria,
             'compareRows' => $compareRows,
             'criteriaSignature' => $criteriaSignature,
@@ -838,10 +836,6 @@ class RecommendationController extends Controller
             'method_code' => 'required|string',
         ]);
 
-        if ($request->session()->has('resultData')) {
-            $request->session()->keep(['resultData']);
-        }
-
         $actor = $this->resolveActorContext($request);
         $userId = $actor['user_id'];
         $guestKey = $actor['guest_key'];
@@ -877,6 +871,15 @@ class RecommendationController extends Controller
                 $guestKey = (string) Str::uuid();
                 $request->session()->put('recommendation_guest_key', $guestKey);
             }
+
+            UserDemographic::firstOrCreate(
+                ['guest_key' => $guestKey],
+                [
+                    'age' => 18,
+                    'gender' => 'Prefer not to say',
+                    'income' => 0.00,
+                ]
+            );
         }
 
         return [

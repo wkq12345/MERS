@@ -98,10 +98,10 @@
         $submissionData = $submission ?? null;
         $submissionResponses = optional($submissionData)->sus_responses;
         $submissionResponses = is_array($submissionResponses) ? $submissionResponses : [];
-        $alreadySubmitted = !is_null(optional($submissionData)->sus_submitted_at);
+        $alreadySubmitted = !is_null(optional($submissionData)->submitted_at);
         $selectedMethodCode = optional($selectedMethod)->code;
         $selectedMethodName = optional($selectedMethod)->name;
-        $hasMethodRun = !is_null($submissionData);
+        $hasMethodRun = !is_null($methodRun ?? null);
     @endphp
 
     <div class="sus-hero d-flex align-items-center justify-content-between flex-wrap gap-3">

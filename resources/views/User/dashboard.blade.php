@@ -123,7 +123,9 @@
     </style>
 @endpush
 
+
 @section('content')
+@include('User.user_demographic')
     <div class="mb-5">
         <h2 class="fw-bold mb-2 d-flex align-items-center gap-2">
             <i class="bi bi-grid-fill fs-4 text-dark"></i>
@@ -234,8 +236,7 @@
                     </a>
                 </div>
 
-<<<<<<< HEAD
-=======
+
                 <!-- Profile -->
                 <div class="action-card">
                     <div class="icon-circle">
@@ -249,7 +250,6 @@
                         <i class="bi bi-person"></i> View Profile
                     </a>
                 </div>
->>>>>>> parent of 0e5d1c8 (add user demographic, and simply code)
             </div>
         </div>
     </div>

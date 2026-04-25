@@ -95,7 +95,7 @@
                             @endif
 
                             @if ($run)
-                                @if (!is_null($run->sus_submitted_at))
+                                @if (!empty($methodSusSubmitted[$method->code]))
                                     <a href="{{ route('recommendations.sus.index', ['method_code' => $method->code]) }}"
                                         class="tw-mt-2 tw-block tw-w-full tw-text-center tw-px-3 tw-py-2 tw-rounded-lg tw-bg-emerald-50 tw-text-emerald-700 tw-border tw-border-emerald-200 hover:tw-bg-emerald-100 tw-no-underline hover:tw-no-underline">
                                         SUS Submitted (View)

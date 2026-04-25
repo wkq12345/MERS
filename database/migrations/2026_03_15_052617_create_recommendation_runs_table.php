@@ -33,18 +33,12 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable();
             $table->string('submitter_name', 100)->nullable();
             $table->string('ip_address', 45)->nullable();
-            $table->foreignId('user_demographics_id')->nullable()->constrained('user_demographics')->onDelete('set null');
             $table->index('submitted_to_admin');
             // time tracking fields
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->unsignedInteger('time_taken_seconds')->nullable();
             $table->index('time_taken_seconds');
-            // system usability scale (SUS) fields
-            $table->json('sus_responses')->nullable();
-            $table->decimal('sus_score', 5, 2)->nullable();
-            $table->timestamp('sus_submitted_at')->nullable();
-            $table->index('sus_score');
             $table->timestamps();
         });
     }
