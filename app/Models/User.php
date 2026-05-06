@@ -25,6 +25,7 @@ class User extends Authenticatable
         'phone',
         'bio',
         'location',
+        'role_id',
     ];
 
     // Relationship with Role
