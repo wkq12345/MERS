@@ -9,6 +9,9 @@ use App\Models\Criteria;
 use App\Models\RecommendationRun;
 use App\Models\SusSubmission;
 use Illuminate\Support\Facades\DB;
+use App\Exports\SubmissionsExport;
+use App\Exports\SusSubmissionsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SuperAdminDashboardController extends Controller
 {
@@ -67,5 +70,15 @@ class SuperAdminDashboardController extends Controller
             ->paginate(20);
 
         return view('SuperAdmin.sus-submissions', compact('submissions'));
+    }
+
+    public function exportSubmissions()
+    {
+        return Excel::download(new SubmissionsExport(), 'submissions_' . now()->format('Y-m-d_His') . '.xlsx');
+    }
+
+    public function exportSusSubmissions()
+    {
+        return Excel::download(new SusSubmissionsExport(), 'sus_submissions_' . now()->format('Y-m-d_His') . '.xlsx');
     }
 }

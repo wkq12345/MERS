@@ -123,6 +123,23 @@ class RecommendationController extends Controller
         return view('recommendations.kano', compact('criteriaTypes'));
     }
 
+    /**
+     * Persist selected criteria in session (and return JSON).
+     */
+    public function saveCriteria(Request $request)
+    {
+        $data = $request->validate([
+            'criteria' => ['required', 'array', 'max:4'],
+            'criteria.*' => ['integer', 'exists:criteria,id'],
+        ]);
+
+        $criteria = array_values($data['criteria']);
+        // Save to session so selection persists across pages and reloads
+        $request->session()->put('selected_criteria', $criteria);
+
+        return response()->json(['status' => 'ok', 'selected' => $criteria]);
+    }
+
     public function calculateRecommendations(Request $request)
     {
         $request->validate([

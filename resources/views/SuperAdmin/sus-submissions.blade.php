@@ -26,9 +26,11 @@
                 <h1 class="mb-1"><i class="bi bi-clipboard2-pulse me-2"></i>SUS Submissions</h1>
                 <p class="mb-0" style="opacity:.85;">System Usability Scale feedback submitted by users.</p>
             </div>
-            <a href="{{ route('super-admin.submissions.index') }}" class="btn btn-light btn-sm">
-                <i class="bi bi-inbox-fill me-1"></i>All Submissions
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('super-admin.sus_submissions.export') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-download me-1"></i>Export to Excel
+                </a>
+            </div>
         </div>
 
         @if ($submissions->isEmpty())

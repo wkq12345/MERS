@@ -229,16 +229,8 @@
                 @endforeach
               @endforeach
             </div>
-          </div>
-          <div class="modal-footer border-top-0 px-4 py-3 d-flex justify-content-between align-items-center bg-white" style="border-radius: 0 0 1rem 1rem;">
-            <span class="text-muted fw-medium small">
-              Selected: <span id="modalSelectedCount" class="fw-bold fs-5" style="color: #8b5cf6;">0</span> / 4
-            </span>
-            <button class="btn px-4 py-2 text-white fw-bold shadow-sm" id="modalConfirmBtn" onclick="confirmCriteriaSelection()" disabled style="background-color: #8b5cf6; border: none; border-radius: 0.5rem; transition: background-color 0.2s;">
-              Confirm Selection
-            </button>
-          </div>
-        </div>
+                        @include('recommendations.partials.criteria_modal')
+                    </div>
       </div>
     </div>
 
@@ -278,7 +270,8 @@
                     answers[id] = { F: null, D: null };
                 });
 
-                let activeCriteria = new Set([]);
+                const __initialSelected = @json(session('selected_criteria', []));
+                let activeCriteria = new Set((__initialSelected || []).map(String));
                 let criteriaModalInstance = new bootstrap.Modal(document.getElementById('criteriaModal'));
 
                 const radios = document.querySelectorAll('.kano-radio');
@@ -287,24 +280,12 @@
                 const progressPercent = document.getElementById('progress-percent');
                 const proceedBtn = document.getElementById('proceed-btn');
 
-                // Criteria Modal Logic
-                document.querySelectorAll('.criteria-checkbox').forEach(cb => {
-                    cb.addEventListener('change', () => {
-                        const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
-                        if (checked > 4) {
-                            cb.checked = false;
-                            alert("You can only select up to 4 criteria.");
-                            return;
-                        }
-                        updateModalBtnState();
-                    });
-                });
-
+                // Criteria modal: use shared partial controls
                 window.openCriteriaModal = function() {
                     document.querySelectorAll('.criteria-checkbox').forEach(cb => {
                         cb.checked = activeCriteria.has(cb.value);
                     });
-                    updateModalBtnState();
+                    if (window.updateModalBtnState) window.updateModalBtnState();
                     criteriaModalInstance.show();
                 }
 
@@ -312,24 +293,19 @@
                     criteriaModalInstance.hide();
                 }
 
-                window.confirmCriteriaSelection = function() {
-                    const checked = document.querySelectorAll('.criteria-checkbox:checked');
-                    if (checked.length !== 4) return;
+                // Handle confirmed selection from shared modal partial
+                document.addEventListener('criteria:confirmed', function (e) {
+                    const selected = e.detail.selected || [];
+                    if (selected.length !== 4) return;
 
                     activeCriteria.clear();
-                    checked.forEach(cb => activeCriteria.add(cb.value));
+                    selected.forEach(id => activeCriteria.add(id));
 
                     showActiveCriteriaCards();
                     criteriaModalInstance.hide();
                     updateProgress();
                     calculateScores();
-                }
-
-                window.updateModalBtnState = function() {
-                    const checked = document.querySelectorAll('.criteria-checkbox:checked').length;
-                    document.getElementById('modalSelectedCount').innerText = checked;
-                    document.getElementById('modalConfirmBtn').disabled = (checked !== 4);
-                }
+                });
 
                 function showActiveCriteriaCards() {
                     document.querySelectorAll('.kano-question-card').forEach(card => {
@@ -352,9 +328,11 @@
                     });
                 }
 
-                // Initial show modal if no criteria
+                // Initial show modal if no criteria, otherwise show restored cards
                 if (activeCriteria.size < 4) {
                     criteriaModalInstance.show();
+                } else {
+                    showActiveCriteriaCards();
                 }
 
                 radios.forEach(radio => {

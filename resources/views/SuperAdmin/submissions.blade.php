@@ -38,9 +38,11 @@
                 <h1 class="mb-1"><i class="bi bi-inbox-fill me-2"></i>User Submissions</h1>
                 <p class="mb-0" style="opacity:.85;">Recommendation results submitted by users for admin review.</p>
             </div>
-            <a href="{{ route('super-admin.sus_submissions.index') }}" class="btn btn-light btn-sm">
-                <i class="bi bi-clipboard2-pulse me-1"></i>View SUS Submissions
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('super-admin.submissions.export') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-download me-1"></i>Export to Excel
+                </a>
+            </div>
         </div>
 
         @if ($submissions->isEmpty())

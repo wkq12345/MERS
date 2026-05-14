@@ -52,6 +52,8 @@ Route::middleware('super-admin.auth')->group(function () {
     Route::get('/super-admin/dashboard', [SuperAdminDashboardController::class, 'index'])->name('super-admin.dashboard');
     Route::get('/super-admin/submissions', [SuperAdminDashboardController::class, 'submissions'])->name('super-admin.submissions.index');
     Route::get('/super-admin/sus-submissions', [SuperAdminDashboardController::class, 'susSubmissions'])->name('super-admin.sus_submissions.index');
+    Route::get('/super-admin/submissions/export', [SuperAdminDashboardController::class, 'exportSubmissions'])->name('super-admin.submissions.export');
+    Route::get('/super-admin/sus-submissions/export', [SuperAdminDashboardController::class, 'exportSusSubmissions'])->name('super-admin.sus_submissions.export');
 
     // Super Admin Profile
     Route::get('/super-admin/profile', [\App\Http\Controllers\SuperAdmin\SuperAdminProfileController::class, 'show'])->name('super-admin.profile.show');
@@ -106,6 +108,7 @@ Route::get('/recommendations/compare', [RecommendationController::class, 'compar
 Route::post('/recommendations/clear-method', [RecommendationController::class, 'clearMethodResult'])->name('recommendations.clear_method');
 Route::post('/recommendations/favorite', [RecommendationController::class, 'saveFavorite'])->name('recommendations.save_favorite');
 Route::post('/recommendations/send-to-admin', [RecommendationController::class, 'sendResultsToAdmin'])->name('recommendations.send_admin');
+Route::post('/recommendations/save-criteria', [RecommendationController::class, 'saveCriteria'])->name('recommendations.save_criteria');
 
 // Profile Routes
 Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
