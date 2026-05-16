@@ -35,7 +35,7 @@
         </div>
 
         <div class="carousel-item">
-            <img src="{{ asset('images/Terengganu/terengganu state museum.png') }}"
+            <img src="{{ asset('images/Terengganu/terengganu.png') }}"
                  class="d-block w-100" alt="Museum">
             <div class="carousel-caption">
                 <h3>Explore Malaysia's Museums</h3>
@@ -44,7 +44,7 @@
         </div>
 
         <div class="carousel-item">
-            <img src="{{ asset('images/Negeri_Sembilan/ns hiking.png') }}"
+            <img src="{{ asset('images/Negeri_Sembilan/ns.png') }}"
                  class="d-block w-100" alt="Hiking Mountain">
             <div class="carousel-caption">
                 <h3>Majestic Mountain Ranges</h3>
