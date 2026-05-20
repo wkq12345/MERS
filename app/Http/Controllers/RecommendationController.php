@@ -598,8 +598,7 @@ class RecommendationController extends Controller
         ]);
 
         return redirect()
-            ->route('recommendations.sus.index', ['method_code' => $weightingMethod->code])
-            ->with('success', 'SUS feedback for ' . $weightingMethod->name . ' submitted successfully. Score: ' . number_format($susScore, 2) . '/100.');
+            ->route('recommendations.compare', ['method_code' => $weightingMethod->code]);
     }
 
     public function compareRecommendations(Request $request)

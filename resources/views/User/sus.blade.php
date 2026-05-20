@@ -103,7 +103,9 @@
         $selectedMethodName = optional($selectedMethod)->name;
         $hasMethodRun = !is_null($methodRun ?? null);
     @endphp
-
+          <a href="{{ route('recommendations.compare') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
     <div class="sus-hero d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
             <h2 class="mb-1"><i class="bi bi-clipboard2-pulse me-2"></i>System Usability Scale (SUS)</h2>

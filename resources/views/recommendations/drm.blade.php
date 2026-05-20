@@ -622,9 +622,9 @@
   <div class="drm-shell">
   <div class="drm-header">
       <div>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
-                            <i class="bi bi-arrow-left me-1"></i>Back
-                        </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.history.back()">
+                <i class="bi bi-arrow-left me-1"></i>Back
+            </button>
     <h2 class="drm-title">Direct Rating Method</h2>
     <p class="drm-subtitle">
           Rate exactly four criteria from 1 to 9 based on their importance to you. (1 = Not Important, 9 = Very Important)
