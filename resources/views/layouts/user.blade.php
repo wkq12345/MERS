@@ -76,10 +76,6 @@
                 <span class="brand-text">MERS Dashboard</span>
             </a>
 
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#dashboardNavbar" aria-controls="dashboardNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
 
                 @auth
                     <div class="dropdown ms-lg-2">

@@ -945,4 +945,68 @@ class RecommendationController extends Controller
     {
         return 'recommendation_method_started_at.' . $methodCode;
     }
+
+    public function downloadComparisonCsv(Request $request)
+    {
+        $actor = $this->resolveActorContext($request);
+        $userId = $actor['user_id'];
+        $guestKey = $actor['guest_key'];
+
+        $methods = WeightingMethod::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $allRunsQuery = RecommendationRun::with('weightingMethod');
+        $this->applyActorScope($allRunsQuery, $userId, $guestKey);
+
+        $allRuns = $allRunsQuery
+            ->latest()
+            ->get();
+
+        $methodRuns = [];
+        foreach ($methods as $method) {
+            $methodRuns[$method->code] = $allRuns->first(function ($run) use ($method) {
+                return optional($run->weightingMethod)->code === $method->code;
+            });
+        }
+
+        $csvData = [];
+        foreach ($methodRuns as $methodCode => $run) {
+            if (!$run || !is_array($run->ranked_results)) {
+                continue;
+            }
+
+            foreach ($run->ranked_results as $result) {
+                $csvData[] = [
+                    'method_code' => $methodCode,
+                    'tourist_spot_id' => $result['tourist_spot_id'] ?? '',
+                    'tourist_spot' => $result['tourist_spot'] ?? '',
+                    'rank' => isset($result['rank']) ? (int) $result['rank'] : '',
+                    'score' => isset($result['score']) ? (float) $result['score'] : '',
+                ];
+            }
+        }
+
+        if (empty($csvData)) {
+            return redirect()->route('recommendations.compare')
+                ->with('error', 'No data available to export.');
+        }
+
+        return response()->streamDownload(function () use ($csvData) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Method Code', 'Tourist Spot ID', 'Tourist Spot', 'Rank', 'Score']);
+
+            foreach ($csvData as $row) {
+                fputcsv($handle, [
+                    $row['method_code'],
+                    $row['tourist_spot_id'],
+                    $row['tourist_spot'],
+                    $row['rank'],
+                    $row['score'],
+                ]);
+            }
+
+            fclose($handle);
+        }, 'recommendation_comparison_' . now()->format('Ymd_His') . '.csv');
+    }
 }
